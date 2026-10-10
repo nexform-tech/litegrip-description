@@ -517,7 +517,7 @@ placeholders chosen to damp simulation oscillation. They were not measured.
 | `joint_damping` | Step 8 | Fitted slope, N·s/m (**simulation only**) |
 | `joint_friction` | Step 8 | Median breakaway force, N (**simulation only**) |
 
-Edit the defaults in [`urdf/litegrip_urdf.urdf.xacro`](../urdf/litegrip_urdf.urdf.xacro):
+Edit the defaults in [`urdf/litegrip_description.urdf.xacro`](../urdf/litegrip_description.urdf.xacro):
 
 ```xml
 <xacro:arg name="stroke"         default="0.042726"/> <!-- measured travel on this unit, converted -->
@@ -528,8 +528,8 @@ Edit the defaults in [`urdf/litegrip_urdf.urdf.xacro`](../urdf/litegrip_urdf.urd
 ```
 
 Then remove the corresponding ⚠ placeholders from the parameter table in
-[README.md](../README.md#calibration-required) and update
-[CHANGELOG.md](../CHANGELOG.md).
+[README.md](../../README.md#calibration-required) and update
+[CHANGELOG.md](../../CHANGELOG.md).
 
 ### A note on `effort` and the SDK's `force_n`
 
@@ -592,7 +592,7 @@ WRITTEN TO
                                           -1.272790/-1.272790/-1.272790 rad; angular range
                                           1.314180/1.314170/1.314190 rad; rad_to_mm
                                           65.0231/65.0236/65.0226 mm/rad
-  urdf/litegrip_urdf.urdf.xacro           stroke = 0.042726; effort/velocity/damping/friction = pending
+  urdf/litegrip_description.urdf.xacro           stroke = 0.042726; effort/velocity/damping/friction = pending
 
 VERIFICATION
   max position error over 0..85.452 mm   2.708 mm (current measurement; fails the < 0.5 mm acceptance)

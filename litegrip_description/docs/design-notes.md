@@ -204,7 +204,7 @@ The two fingers are mirror images: their inertia tensors are identical in `ixx`,
 `izz`, and their products of inertia differ in sign on `ixz` and `iyz`, as expected.
 
 Full tensors, including centres of mass and products of inertia, are in
-[`urdf/litegrip_urdf.urdf.xacro`](../urdf/litegrip_urdf.urdf.xacro).
+[`urdf/litegrip_description.urdf.xacro`](../urdf/litegrip_description.urdf.xacro).
 
 ---
 

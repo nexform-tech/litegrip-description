@@ -1,9 +1,9 @@
 """在 RViz2 中可视化 LiteGrip 夹爪。
 
 启动：
-    ros2 launch litegrip_urdf display.launch.py
-    ros2 launch litegrip_urdf display.launch.py gui:=false          # 不要关节滑块
-    ros2 launch litegrip_urdf display.launch.py stroke:=0.02        # 覆盖关节行程
+    ros2 launch litegrip_description display.launch.py
+    ros2 launch litegrip_description display.launch.py gui:=false          # 不要关节滑块
+    ros2 launch litegrip_description display.launch.py stroke:=0.02        # 覆盖关节行程
 
 启动的节点：
     robot_state_publisher     解析 URDF 并发布 TF
@@ -23,9 +23,9 @@ from launch_ros.parameter_descriptions import ParameterValue
 
 
 def generate_launch_description():
-    pkg_share = get_package_share_directory('litegrip_urdf')
-    xacro_file = os.path.join(pkg_share, 'urdf', 'litegrip_urdf.urdf.xacro')
-    default_rviz_config = os.path.join(pkg_share, 'config', 'litegrip_urdf.rviz')
+    pkg_share = get_package_share_directory('litegrip_description')
+    xacro_file = os.path.join(pkg_share, 'urdf', 'litegrip_description.urdf.xacro')
+    default_rviz_config = os.path.join(pkg_share, 'config', 'litegrip_description.rviz')
 
     # 路径用引号包裹，避免工作空间路径含空格时 shell 解析出错
     robot_description = ParameterValue(

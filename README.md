@@ -1,4 +1,4 @@
-# litegrip_urdf
+# litegrip_description
 
 ROS 2 description package for the **LiteGrip parallel gripper** — URDF/xacro model,
 RViz visualization, Gazebo simulation, and ros2_control hardware interface definitions.
@@ -22,7 +22,7 @@ not — read it before depending on any part of this package.
 | Capability | Status | Evidence |
 | --- | --- | --- |
 | URDF/xacro parses | ✅ Verified | `check_urdf` reports root `base_footprint` → `base_link` → 2 finger links |
-| `colcon build` | ✅ Verified | Builds on ROS 2 Humble; see [known environment issue](docs/troubleshooting.md#conda-python3-breaks-the-build) |
+| `colcon build` | ✅ Verified | Builds on ROS 2 Humble; see [known environment issue](litegrip_description/docs/troubleshooting.md#conda-python3-breaks-the-build) |
 | `display.launch.py` | ✅ Verified | Launches, `stroke:=` override propagates into the URDF |
 | `ros2_control.launch.py` | ✅ Verified | Both controllers reach `active`; position command round-trip confirmed |
 | Joint geometry (stroke ↔ opening) | ⚠️ **Re-verification pending** | Finger origins and inner-face positions were confirmed via TF at the mesh-theoretical travel limit `0.0435`; the shipped limit is now the measured `0.042726`, so both endpoints need re-checking |
@@ -41,36 +41,36 @@ LiteGrip is a two-finger parallel gripper driven by two independent prismatic jo
 one per finger. The two fingers move symmetrically along the X axis of `base_link`.
 
 This package is a pure description package. It contains no compiled code — `CMakeLists.txt`
-only installs `urdf/`, `launch/`, `config/`, and `meshes/` into `share/litegrip_urdf/`.
+only installs `urdf/`, `launch/`, `config/`, and `meshes/` into `share/litegrip_description/`.
 
 ```text
-litegrip_urdf/
-├── package.xml
-├── CMakeLists.txt
-├── CHANGELOG.md
-├── .markdownlint.json
-├── .gitignore
-├── urdf/
-│   └── litegrip_urdf.urdf.xacro          Robot description — the single source of truth
-├── launch/
-│   ├── display.launch.py                 RViz visualization
-│   ├── ros2_control.launch.py            ros2_control pipeline
-│   └── gazebo.launch.py                  Gazebo Classic simulation (⚠ unverified)
-├── config/
-│   ├── litegrip_controllers.yaml         ros2_control controller configuration
-│   ├── joint_names_litegrip_urdf.yaml    Joint name list, for MoveIt Setup Assistant
-│   └── litegrip_urdf.rviz                RViz configuration
-├── meshes/
-│   ├── base_link.STL                     ~925 KB
-│   ├── gripper_slider_link1.STL          (right finger)
-│   └── gripper_slider_link2.STL          (left finger)
-└── docs/
-    ├── calibration-guide.md              Step-by-step calibration procedure
-    ├── calibration-guide.zh-CN.md        Chinese translation
-    ├── design-notes.md                   Design decisions, geometry derivation, revision history
-    ├── design-notes.zh-CN.md             Chinese translation
-    ├── troubleshooting.md                Known pitfalls and their resolutions
-    └── troubleshooting.zh-CN.md          Chinese translation
+<repository root>/
+├── README.md, README.zh-CN.md, CHANGELOG.md, LICENSE, AGENTS.md
+├── .github/workflows/                    ci.yml, release.yml
+└── litegrip_description/                 the ROS 2 package (colcon finds package.xml recursively)
+    ├── package.xml
+    ├── CMakeLists.txt
+    ├── urdf/
+    │   └── litegrip_description.urdf.xacro       Robot description — the single source of truth
+    ├── launch/
+    │   ├── display.launch.py                   RViz visualization
+    │   ├── ros2_control.launch.py              ros2_control pipeline
+    │   └── gazebo.launch.py                    Gazebo Classic simulation (⚠ unverified)
+    ├── config/
+    │   ├── litegrip_controllers.yaml           ros2_control controller configuration
+    │   ├── joint_names_litegrip_description.yaml   Joint name list, for MoveIt Setup Assistant
+    │   └── litegrip_description.rviz           RViz configuration
+    ├── meshes/
+    │   ├── base_link.STL                       ~925 KB
+    │   ├── gripper_slider_link1.STL            (right finger)
+    │   └── gripper_slider_link2.STL            (left finger)
+    └── docs/
+        ├── calibration-guide.md                Step-by-step calibration procedure
+        ├── calibration-guide.zh-CN.md          Chinese translation
+        ├── design-notes.md                     Design decisions, geometry derivation, revision history
+        ├── design-notes.zh-CN.md               Chinese translation
+        ├── troubleshooting.md                  Known pitfalls and their resolutions
+        └── troubleshooting.zh-CN.md            Chinese translation
 ```
 
 **Physical properties.** Total mass 0.5772 kg — `base_link` 0.5063 kg, each finger
@@ -81,7 +81,7 @@ litegrip_urdf/
 ## Requirements
 
 - ROS 2 Humble Hawksbill on Ubuntu 22.04
-- Python 3.10 (system interpreter — see [the Conda note](docs/troubleshooting.md#conda-python3-breaks-the-build))
+- Python 3.10 (system interpreter — see [the Conda note](litegrip_description/docs/troubleshooting.md#conda-python3-breaks-the-build))
 
 ---
 
@@ -107,15 +107,15 @@ Build the package:
 
 ```bash
 mkdir -p ~/ros2_ws/src && cd ~/ros2_ws/src
-ln -s /path/to/litegrip_urdf .          # or copy the directory
+ln -s /path/to/litegrip-description .          # or copy the directory
 cd ~/ros2_ws
-colcon build --packages-select litegrip_urdf
+colcon build --packages-select litegrip_description
 source install/setup.bash
 ```
 
 > If `colcon build` fails with `ModuleNotFoundError: No module named 'catkin_pkg'`,
 > a Conda interpreter is shadowing the system Python. See
-> [docs/troubleshooting.md](docs/troubleshooting.md#conda-python3-breaks-the-build) —
+> [docs/troubleshooting.md](litegrip_description/docs/troubleshooting.md#conda-python3-breaks-the-build) —
 > this is the most common build failure for this package.
 
 ---
@@ -125,7 +125,7 @@ source install/setup.bash
 ### 1. RViz visualization
 
 ```bash
-ros2 launch litegrip_urdf display.launch.py
+ros2 launch litegrip_description display.launch.py
 ```
 
 Drag the sliders in the `joint_state_publisher_gui` window to drive both fingers.
@@ -134,7 +134,7 @@ Drag the sliders in the `joint_state_publisher_gui` window to drive both fingers
 | --- | --- | --- |
 | `gui` | `true` | Start `joint_state_publisher_gui` (joint sliders) |
 | `rviz` | `true` | Start RViz2 |
-| `rvizconfig` | `config/litegrip_urdf.rviz` | RViz configuration file path |
+| `rvizconfig` | `config/litegrip_description.rviz` | RViz configuration file path |
 | `stroke` | `0.042726` | Per-finger travel (m) — measured value |
 | `effort` | `10.0` | Joint maximum effort (N) |
 | `velocity` | `0.2` | Joint maximum velocity (m/s) |
@@ -142,8 +142,8 @@ Drag the sliders in the `joint_state_publisher_gui` window to drive both fingers
 Examples:
 
 ```bash
-ros2 launch litegrip_urdf display.launch.py gui:=false       # no slider window
-ros2 launch litegrip_urdf display.launch.py stroke:=0.02     # override joint travel
+ros2 launch litegrip_description display.launch.py gui:=false       # no slider window
+ros2 launch litegrip_description display.launch.py stroke:=0.02     # override joint travel
 ```
 
 > ⚠️ **`gui:=false` removes the finger links from TF.** `joint_state_publisher_gui`
@@ -161,7 +161,7 @@ The RViz configuration uses `base_footprint` as its fixed frame.
 ### 2. ros2_control pipeline
 
 ```bash
-ros2 launch litegrip_urdf ros2_control.launch.py
+ros2 launch litegrip_description ros2_control.launch.py
 ```
 
 | Argument | Default | Description |
@@ -218,7 +218,7 @@ ros2 topic echo /joint_states
 > session and confirm that the model spawns correctly and both controllers activate.
 
 ```bash
-ros2 launch litegrip_urdf gazebo.launch.py
+ros2 launch litegrip_description gazebo.launch.py
 ```
 
 This launch forces `hardware_plugin:=gazebo_ros2_control/GazeboSystem` and starts Gazebo,
@@ -314,7 +314,7 @@ the real gripper does not reach the ideal zero-gap closure, the measured value i
 At `stroke = 0.067` the two fingers would fully overlap and interpenetrate. The
 SolidWorks CSV declares `Limit Upper = 0.067` for the right finger and `-0.067` for the
 left; both are unusable as exported. Full derivation in
-[docs/design-notes.md](docs/design-notes.md#gripper-geometry).
+[docs/design-notes.md](litegrip_description/docs/design-notes.md#gripper-geometry).
 
 > ⚠️ Changing the limit to `0.042726` changes both travel endpoints of the model. The
 > mesh and TF checks recorded below were performed at the mesh-theoretical `0.0435`, so
@@ -325,7 +325,7 @@ left; both are unusable as exported. Full derivation in
 
 ## Configuration
 
-`urdf/litegrip_urdf.urdf.xacro` is parameterized by xacro arguments:
+`urdf/litegrip_description.urdf.xacro` is parameterized by xacro arguments:
 
 | Argument | Default | Description |
 | --- | --- | --- |
@@ -344,8 +344,8 @@ file — to change them you must either edit the xacro defaults or invoke `xacro
 Expand to plain URDF for tools that do not support xacro:
 
 ```bash
-xacro $(ros2 pkg prefix litegrip_urdf)/share/litegrip_urdf/urdf/litegrip_urdf.urdf.xacro \
-  -o /tmp/litegrip_urdf.urdf
+xacro $(ros2 pkg prefix litegrip_description)/share/litegrip_description/urdf/litegrip_description.urdf.xacro \
+  -o /tmp/litegrip_description.urdf
 ```
 
 ### Calibration required
@@ -356,7 +356,7 @@ derived from `<limit>` is incorrect. `joint_damping` and `joint_friction` are co
 initial values chosen only to damp simulation oscillation and should likewise be
 calibrated against the real mechanism.
 
-→ **[Calibration Guide](docs/calibration-guide.md)** — the complete step-by-step procedure
+→ **[Calibration Guide](litegrip_description/docs/calibration-guide.md)** — the complete step-by-step procedure
 for measuring these values, from the physical gripper through the Python SDK to the xacro
 arguments above.
 
@@ -367,7 +367,7 @@ arguments above.
 Substitute your vendor's ros2_control hardware interface plugin for the mock:
 
 ```bash
-ros2 launch litegrip_urdf ros2_control.launch.py hardware_plugin:=<vendor_plugin_name>
+ros2 launch litegrip_description ros2_control.launch.py hardware_plugin:=<vendor_plugin_name>
 ```
 
 Your plugin must provide, for both joints:
@@ -414,7 +414,7 @@ The following are **incomplete** and must be resolved before this package is pub
 
 | Document | Contents |
 | --- | --- |
-| [docs/calibration-guide.md](docs/calibration-guide.md) | Step-by-step procedure to replace every placeholder value with a measured one — stroke, angle range, force, speed, damping, friction |
-| [docs/design-notes.md](docs/design-notes.md) | Geometry derivation, joint conventions, revision history against the SolidWorks export, rationale for design decisions |
-| [docs/troubleshooting.md](docs/troubleshooting.md) | Known failure modes and their resolutions, including the Conda build failure and the `controller_manager` naming pitfall |
+| [docs/calibration-guide.md](litegrip_description/docs/calibration-guide.md) | Step-by-step procedure to replace every placeholder value with a measured one — stroke, angle range, force, speed, damping, friction |
+| [docs/design-notes.md](litegrip_description/docs/design-notes.md) | Geometry derivation, joint conventions, revision history against the SolidWorks export, rationale for design decisions |
+| [docs/troubleshooting.md](litegrip_description/docs/troubleshooting.md) | Known failure modes and their resolutions, including the Conda build failure and the `controller_manager` naming pitfall |
 | [CHANGELOG.md](CHANGELOG.md) | Version history |
