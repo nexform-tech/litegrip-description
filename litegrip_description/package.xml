@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>litegrip_urdf</name>
+  <name>litegrip_description</name>
   <version>1.0.0</version>
   <description>
     Robot description (URDF/xacro) and ROS 2 control configuration for the
@@ -9,12 +9,11 @@
     ros2_control hardware interface definitions.
   </description>
 
-  <!-- ⚠ 发布前必填：维护者信息 -->
-  <maintainer email="TODO@example.com">LiteGrip</maintainer>
+  <maintainer email="wuruihao@nexform.tech">NEXFORM ROBOTICS</maintainer>
 
-  <!-- ⚠ 许可证尚未确定。ROS 2 要求至少一个 license 标签，否则 colcon 拒包，
-       故此处以 TODO 占位，不作为任何法律声明。选定后请替换。 -->
-  <license>TODO</license>
+  <!-- 与仓库根目录的 LICENSE（Apache-2.0）一致。ROS 2 要求至少一个 license 标签，
+       否则 colcon 拒包。 -->
+  <license>Apache-2.0</license>
 
   <url type="website">https://example.com/litegrip</url>
   <url type="bugtracker">https://example.com/litegrip/issues</url>

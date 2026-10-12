@@ -12,7 +12,7 @@ URDF 中已定义 base_footprint 为无惯性根节点且与 base_link 位姿重
 （原 catkin 包的 gazebo.launch 存在此问题。）
 
 启动：
-    ros2 launch litegrip_urdf gazebo.launch.py
+    ros2 launch litegrip_description gazebo.launch.py
 """
 
 import os
@@ -28,8 +28,8 @@ from launch_ros.parameter_descriptions import ParameterValue
 
 
 def generate_launch_description():
-    pkg_share = get_package_share_directory('litegrip_urdf')
-    xacro_file = os.path.join(pkg_share, 'urdf', 'litegrip_urdf.urdf.xacro')
+    pkg_share = get_package_share_directory('litegrip_description')
+    xacro_file = os.path.join(pkg_share, 'urdf', 'litegrip_description.urdf.xacro')
     controllers_yaml = os.path.join(pkg_share, 'config', 'litegrip_controllers.yaml')
 
     robot_description = ParameterValue(
@@ -69,7 +69,7 @@ def generate_launch_description():
         package='gazebo_ros',
         executable='spawn_entity.py',
         arguments=['-topic', 'robot_description',
-                   '-entity', 'litegrip_urdf'],
+                   '-entity', 'litegrip_description'],
         output='screen',
     )
 

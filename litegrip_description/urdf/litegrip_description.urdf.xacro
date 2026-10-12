@@ -35,10 +35,10 @@
     ⚠ 改用 0.042726 后，模型两端位形仍需在运行时做 mesh/TF 复核。
   ============================================================================
 -->
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="litegrip_urdf">
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="litegrip_description">
 
   <!-- ======================== 可配置参数 ======================== -->
-  <!-- 用法: xacro litegrip_urdf.urdf.xacro stroke:=0.042726 -->
+  <!-- 用法: xacro litegrip_description.urdf.xacro stroke:=0.042726 -->
 
   <!-- 单指行程 (m)，即关节 limit 的 upper。默认值 = 本机实测单指行程；
        mesh 理论值为 0.0435，如需与 CAD 几何严格一致可显式传 stroke:=0.0435 -->
@@ -93,14 +93,14 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://litegrip_urdf/meshes/base_link.STL"/>
+        <mesh filename="package://litegrip_description/meshes/base_link.STL"/>
       </geometry>
       <material name="litegrip_base"/>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://litegrip_urdf/meshes/base_link.STL"/>
+        <mesh filename="package://litegrip_description/meshes/base_link.STL"/>
       </geometry>
     </collision>
   </link>
@@ -121,14 +121,14 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://litegrip_urdf/meshes/gripper_slider_link1.STL"/>
+        <mesh filename="package://litegrip_description/meshes/gripper_slider_link1.STL"/>
       </geometry>
       <material name="litegrip_finger"/>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://litegrip_urdf/meshes/gripper_slider_link1.STL"/>
+        <mesh filename="package://litegrip_description/meshes/gripper_slider_link1.STL"/>
       </geometry>
     </collision>
   </link>
@@ -162,14 +162,14 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://litegrip_urdf/meshes/gripper_slider_link2.STL"/>
+        <mesh filename="package://litegrip_description/meshes/gripper_slider_link2.STL"/>
       </geometry>
       <material name="litegrip_finger"/>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://litegrip_urdf/meshes/gripper_slider_link2.STL"/>
+        <mesh filename="package://litegrip_description/meshes/gripper_slider_link2.STL"/>
       </geometry>
     </collision>
   </link>
@@ -196,7 +196,7 @@
     它将下发的 position 指令直接回读为 state，用于在没有真实硬件的情况下
     验证控制链路、跑通仿真与集成测试。
     接入真机时通过 launch 参数覆盖：
-      ros2 launch litegrip_urdf ros2_control.launch.py \
+      ros2 launch litegrip_description ros2_control.launch.py \
         hardware_plugin:=<厂商插件名>
   -->
   <ros2_control name="litegrip_system" type="system">

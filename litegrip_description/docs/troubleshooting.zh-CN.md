@@ -27,7 +27,7 @@ CMake Error at .../ament_package_xml.cmake:95 (message):
 **修复。** 让 CMake 指向系统解释器：
 
 ```bash
-colcon build --packages-select litegrip_urdf \
+colcon build --packages-select litegrip_description \
   --cmake-args -DPython3_EXECUTABLE=/usr/bin/python3
 ```
 
@@ -39,7 +39,7 @@ colcon build --packages-select litegrip_urdf \
 
 ## `gui:=false` 会使手指 link 从 TF 中消失
 
-**症状。** 使用 `ros2 launch litegrip_urdf display.launch.py gui:=false` 时：
+**症状。** 使用 `ros2 launch litegrip_description display.launch.py gui:=false` 时：
 
 - `tf2_echo base_footprint base_link` 正常，平移为 `[0, 0, 0]`。
 - `tf2_echo base_footprint gripper_slider_link1` 一直等待，报
@@ -186,7 +186,7 @@ sudo apt install ros-humble-gazebo-ros-pkgs ros-humble-gazebo-ros2-control
 | `夹爪urdf改前.urdf` | `joint 'gripper_slide_joint' is not unique.` |
 | `夹爪urdf2 (1).urdf` | `upper value (0.043.5) is not a valid float` |
 
-**修复。** 使用本包中的 `urdf/litegrip_urdf.urdf.xacro`。两份中间文件都不能作为参照 ——
+**修复。** 使用本包中的 `urdf/litegrip_description.urdf.xacro`。两份中间文件都不能作为参照 ——
 尤其**不要从中拷贝 `0.067` 的行程限位**。当前本机实测单指行程为 `0.042726 m`，
 总机械行程为 `85.452 mm`；`0.0435 m` 仅是由 mesh 包围盒推导出的理论行程，不能替代
 本机实测标定值。正确推导见

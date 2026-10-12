@@ -475,7 +475,7 @@ URDF velocity = （最大开口速率 mm/s）/ 2 / 1000      [m/s]
 | `joint_damping` | 第 8 步 | 拟合斜率，N·s/m（**仅仿真**） |
 | `joint_friction` | 第 8 步 | 突破力中位数，N（**仅仿真**） |
 
-编辑 [`urdf/litegrip_urdf.urdf.xacro`](../urdf/litegrip_urdf.urdf.xacro) 中的默认值：
+编辑 [`urdf/litegrip_description.urdf.xacro`](../urdf/litegrip_description.urdf.xacro) 中的默认值：
 
 ```xml
 <xacro:arg name="stroke"         default="0.042726"/> <!-- 本机实测行程换算值 -->
@@ -485,8 +485,8 @@ URDF velocity = （最大开口速率 mm/s）/ 2 / 1000      [m/s]
 <xacro:arg name="joint_friction" default="0.____"/>   <!-- 待测：第 8 步，仅仿真 -->
 ```
 
-然后从 [README.zh-CN.md](../README.zh-CN.md#需要标定) 的参数表中删除对应的 ⚠ 占位标记，
-并更新 [CHANGELOG.md](../CHANGELOG.md)。
+然后从 [README.zh-CN.md](../../README.zh-CN.md#需要标定) 的参数表中删除对应的 ⚠ 占位标记，
+并更新 [CHANGELOG.md](../../CHANGELOG.md)。
 
 ### 关于 `effort` 与 SDK 的 `force_n`
 
@@ -536,7 +536,7 @@ prismatic 关节的 URDF `effort` 是该关节沿其轴向能施加的力 ——
   ~/.litegrip/litegrip_calibration.json   rad_to_mm = 65.0229
   litegrip/models.py                      max_stroke_mm = 85.452
   litegrip/gripper.py                     calibrate_guided 已修正并验证：闭合角度0.041390/0.041380/0.041400 rad；张开角度-1.272790/-1.272790/-1.272790 rad；角度行程1.314180/1.314170/1.314190 rad；rad_to_mm 65.0231/65.0236/65.0226 mm/rad
-  urdf/litegrip_urdf.urdf.xacro           stroke = 0.042726；effort/velocity/damping/friction = 待测
+  urdf/litegrip_description.urdf.xacro           stroke = 0.042726；effort/velocity/damping/friction = 待测
 
 验证
   0..85.452 mm 区间内最大位置误差     2.708 mm（当前实测，未通过 < 0.5 mm 验收）

@@ -28,7 +28,7 @@ problem, not a defect in this package — it affects any `ament_cmake` package.
 **Fix.** Point CMake at the system interpreter:
 
 ```bash
-colcon build --packages-select litegrip_urdf \
+colcon build --packages-select litegrip_description \
   --cmake-args -DPython3_EXECUTABLE=/usr/bin/python3
 ```
 
@@ -41,7 +41,7 @@ interpreter environment that fails in less obvious ways later.
 
 ## `gui:=false` removes the finger links from TF
 
-**Symptom.** With `ros2 launch litegrip_urdf display.launch.py gui:=false`:
+**Symptom.** With `ros2 launch litegrip_description display.launch.py gui:=false`:
 
 - `tf2_echo base_footprint base_link` succeeds — translation `[0, 0, 0]`.
 - `tf2_echo base_footprint gripper_slider_link1` hangs, reporting
@@ -199,7 +199,7 @@ motion in the simulation.
 | `夹爪urdf改前.urdf` | `joint 'gripper_slide_joint' is not unique.` |
 | `夹爪urdf2 (1).urdf` | `upper value (0.043.5) is not a valid float` |
 
-**Fix.** Use `urdf/litegrip_urdf.urdf.xacro` from this package. Neither intermediate file
+**Fix.** Use `urdf/litegrip_description.urdf.xacro` from this package. Neither intermediate file
 is usable as a reference — in particular, **do not copy the `0.067` travel limit from
 them**. The measured per-finger travel of this unit is `0.042726 m`, with a total
 mechanical stroke of `85.452 mm`; `0.0435 m` is only the theoretical travel derived from

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(litegrip_urdf)
+project(litegrip_description)
 
 find_package(ament_cmake REQUIRED)
 

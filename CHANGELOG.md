@@ -89,7 +89,7 @@ Change categories: `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Securi
   is 85.452 mm (42.726 mm per finger), so as shipped every millimetre reading is about
   1.404× too large. Eight further
   inconsistencies in the SDK are catalogued in
-  [docs/calibration-guide.md](docs/calibration-guide.md#known-inconsistencies-in-the-sdk).
+  [docs/calibration-guide.md](litegrip_description/docs/calibration-guide.md#known-inconsistencies-in-the-sdk).
 
 ---
 
@@ -121,7 +121,7 @@ package.
 ### Fixed
 
 Repairs carried out relative to the SolidWorks export. **No geometric or inertial value
-was altered.** Full rationale in [docs/design-notes.md](docs/design-notes.md#revision-history-against-the-solidworks-export).
+was altered.** Full rationale in [docs/design-notes.md](litegrip_description/docs/design-notes.md#revision-history-against-the-solidworks-export).
 
 - Invalid joint limit `upper="0.043.5"` — not a valid float; the export could not be parsed
   by any URDF parser.

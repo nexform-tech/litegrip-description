@@ -176,7 +176,7 @@ RViz 配置使用的固定坐标系即为 `base_footprint`。
 符合预期。
 
 完整张量（含质心位置与惯性积）见
-[`urdf/litegrip_urdf.urdf.xacro`](../urdf/litegrip_urdf.urdf.xacro)。
+[`urdf/litegrip_description.urdf.xacro`](../urdf/litegrip_description.urdf.xacro)。
 
 ---
 

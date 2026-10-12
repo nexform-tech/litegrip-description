@@ -1,9 +1,9 @@
 """启动 ros2_control 控制链路。
 
 启动：
-    ros2 launch litegrip_urdf ros2_control.launch.py
+    ros2 launch litegrip_description ros2_control.launch.py
     # 接入真机时替换硬件插件：
-    ros2 launch litegrip_urdf ros2_control.launch.py \
+    ros2 launch litegrip_description ros2_control.launch.py \
         hardware_plugin:=<厂商硬件接口插件名>
 
 默认硬件插件为 mock_components/GenericSystem —— 它把下发的 position 指令
@@ -29,8 +29,8 @@ from launch_ros.parameter_descriptions import ParameterValue
 
 
 def generate_launch_description():
-    pkg_share = get_package_share_directory('litegrip_urdf')
-    xacro_file = os.path.join(pkg_share, 'urdf', 'litegrip_urdf.urdf.xacro')
+    pkg_share = get_package_share_directory('litegrip_description')
+    xacro_file = os.path.join(pkg_share, 'urdf', 'litegrip_description.urdf.xacro')
     controllers_yaml = os.path.join(pkg_share, 'config', 'litegrip_controllers.yaml')
 
     robot_description = ParameterValue(

@@ -1,4 +1,4 @@
-# litegrip_urdf
+# litegrip_description
 
 **LiteGrip 平行夹爪**的 ROS 2 描述包 —— URDF/xacro 模型、RViz 可视化、Gazebo 仿真
 与 ros2_control 硬件接口定义。
@@ -22,7 +22,7 @@
 | 能力 | 状态 | 依据 |
 | --- | --- | --- |
 | URDF/xacro 可解析 | ✅ 已验证 | `check_urdf` 报出根节点 `base_footprint` → `base_link` → 2 个手指 link |
-| `colcon build` | ✅ 已验证 | 在 ROS 2 Humble 上构建通过；见[已知环境问题](docs/troubleshooting.zh-CN.md#conda-的-python3-导致构建失败) |
+| `colcon build` | ✅ 已验证 | 在 ROS 2 Humble 上构建通过；见[已知环境问题](litegrip_description/docs/troubleshooting.zh-CN.md#conda-的-python3-导致构建失败) |
 | `display.launch.py` | ✅ 已验证 | 可启动，`stroke:=` 覆盖值能传入 URDF |
 | `ros2_control.launch.py` | ✅ 已验证 | 两个控制器均达到 `active`；位置指令回路已确认 |
 | 关节几何（行程 ↔ 开口） | ⚠️ **待重新验证** | TF 复核是在 mesh 理论行程 `0.0435` 两端做的；现默认限位已改为实测值 `0.042726`，两端位形需重新复核 |
@@ -41,36 +41,36 @@ LiteGrip 是两指平行夹爪，由两个独立的 prismatic 关节驱动，每
 两指沿 `base_link` 的 X 轴做对称运动。
 
 本包是纯描述包，不含任何编译产物 —— `CMakeLists.txt` 仅将 `urdf/`、`launch/`、
-`config/`、`meshes/` 安装到 `share/litegrip_urdf/`。
+`config/`、`meshes/` 安装到 `share/litegrip_description/`。
 
 ```text
-litegrip_urdf/
-├── package.xml
-├── CMakeLists.txt
-├── CHANGELOG.md
-├── .markdownlint.json
-├── .gitignore
-├── urdf/
-│   └── litegrip_urdf.urdf.xacro          机器人描述 —— 唯一的模型源文件
-├── launch/
-│   ├── display.launch.py                 RViz 可视化
-│   ├── ros2_control.launch.py            ros2_control 控制链路
-│   └── gazebo.launch.py                  Gazebo Classic 仿真（⚠ 未验证）
-├── config/
-│   ├── litegrip_controllers.yaml         ros2_control 控制器配置
-│   ├── joint_names_litegrip_urdf.yaml    关节名清单，供 MoveIt Setup Assistant 导入
-│   └── litegrip_urdf.rviz                RViz 配置
-├── meshes/
-│   ├── base_link.STL                     约 925 KB
-│   ├── gripper_slider_link1.STL          （右指）
-│   └── gripper_slider_link2.STL          （左指）
-└── docs/
-    ├── calibration-guide.zh-CN.md        标定流程（逐步）
-    ├── calibration-guide.md              英文版
-    ├── design-notes.zh-CN.md             设计决策、几何推导、修订记录
-    ├── design-notes.md                   英文版
-    ├── troubleshooting.zh-CN.md          已知坑点及其解决办法
-    └── troubleshooting.md                英文版
+<仓库根>/
+├── README.md、README.zh-CN.md、CHANGELOG.md、LICENSE、AGENTS.md
+├── .github/workflows/                    ci.yml、release.yml
+└── litegrip_description/                 ROS 2 功能包（colcon 会递归查找 package.xml）
+    ├── package.xml
+    ├── CMakeLists.txt
+    ├── urdf/
+    │   └── litegrip_description.urdf.xacro      机器人描述 —— 唯一的模型源文件
+    ├── launch/
+    │   ├── display.launch.py                   RViz 可视化
+    │   ├── ros2_control.launch.py              ros2_control 控制链路
+    │   └── gazebo.launch.py                    Gazebo Classic 仿真（⚠ 未验证）
+    ├── config/
+    │   ├── litegrip_controllers.yaml           ros2_control 控制器配置
+    │   ├── joint_names_litegrip_description.yaml   关节名清单，供 MoveIt Setup Assistant 导入
+    │   └── litegrip_description.rviz           RViz 配置
+    ├── meshes/
+    │   ├── base_link.STL                       约 925 KB
+    │   ├── gripper_slider_link1.STL            （右指）
+    │   └── gripper_slider_link2.STL            （左指）
+    └── docs/
+        ├── calibration-guide.zh-CN.md          标定流程（逐步）
+        ├── calibration-guide.md                英文版
+        ├── design-notes.zh-CN.md               设计决策、几何推导、修订记录
+        ├── design-notes.md                     英文版
+        ├── troubleshooting.zh-CN.md            已知坑点及其解决办法
+        └── troubleshooting.md                  英文版
 ```
 
 **物理属性。** 总质量 0.5772 kg —— `base_link` 0.5063 kg，每指 0.03545 kg。
@@ -81,7 +81,7 @@ litegrip_urdf/
 ## 环境要求
 
 - Ubuntu 22.04 上的 ROS 2 Humble Hawksbill
-- Python 3.10（系统解释器 —— 见 [Conda 相关说明](docs/troubleshooting.zh-CN.md#conda-的-python3-导致构建失败)）
+- Python 3.10（系统解释器 —— 见 [Conda 相关说明](litegrip_description/docs/troubleshooting.zh-CN.md#conda-的-python3-导致构建失败)）
 
 ---
 
@@ -107,15 +107,15 @@ sudo apt install ros-humble-gazebo-ros-pkgs ros-humble-gazebo-ros2-control
 
 ```bash
 mkdir -p ~/ros2_ws/src && cd ~/ros2_ws/src
-ln -s /path/to/litegrip_urdf .          # 或直接拷贝本目录
+ln -s /path/to/litegrip-description .          # 或直接拷贝本目录
 cd ~/ros2_ws
-colcon build --packages-select litegrip_urdf
+colcon build --packages-select litegrip_description
 source install/setup.bash
 ```
 
 > 若 `colcon build` 报 `ModuleNotFoundError: No module named 'catkin_pkg'`，
 > 说明 Conda 解释器抢占了系统 Python。见
-> [docs/troubleshooting.zh-CN.md](docs/troubleshooting.zh-CN.md#conda-的-python3-导致构建失败)
+> [docs/troubleshooting.zh-CN.md](litegrip_description/docs/troubleshooting.zh-CN.md#conda-的-python3-导致构建失败)
 > —— 这是本包最常见的构建失败原因。
 
 ---
@@ -125,7 +125,7 @@ source install/setup.bash
 ### 1. RViz 可视化
 
 ```bash
-ros2 launch litegrip_urdf display.launch.py
+ros2 launch litegrip_description display.launch.py
 ```
 
 拖动 `joint_state_publisher_gui` 窗口的滑块即可驱动两指。
@@ -134,7 +134,7 @@ ros2 launch litegrip_urdf display.launch.py
 | --- | --- | --- |
 | `gui` | `true` | 是否启动 `joint_state_publisher_gui` 关节滑块 |
 | `rviz` | `true` | 是否启动 RViz2 |
-| `rvizconfig` | `config/litegrip_urdf.rviz` | RViz 配置文件路径 |
+| `rvizconfig` | `config/litegrip_description.rviz` | RViz 配置文件路径 |
 | `stroke` | `0.042726` | 单指行程 (m)，实测值 |
 | `effort` | `10.0` | 关节最大输出力 (N) |
 | `velocity` | `0.2` | 关节最大速度 (m/s) |
@@ -142,8 +142,8 @@ ros2 launch litegrip_urdf display.launch.py
 示例：
 
 ```bash
-ros2 launch litegrip_urdf display.launch.py gui:=false       # 不要关节滑块
-ros2 launch litegrip_urdf display.launch.py stroke:=0.02     # 覆盖关节行程
+ros2 launch litegrip_description display.launch.py gui:=false       # 不要关节滑块
+ros2 launch litegrip_description display.launch.py stroke:=0.02     # 覆盖关节行程
 ```
 
 > ⚠️ **`gui:=false` 会使手指 link 从 TF 中消失。** 本 launch 中唯一发布
@@ -161,7 +161,7 @@ RViz 配置使用的固定坐标系为 `base_footprint`。
 ### 2. ros2_control 控制链路
 
 ```bash
-ros2 launch litegrip_urdf ros2_control.launch.py
+ros2 launch litegrip_description ros2_control.launch.py
 ```
 
 | 参数 | 默认值 | 说明 |
@@ -214,7 +214,7 @@ ros2 topic echo /joint_states
 > 首次运行请当作一次调试过程，重点确认模型是否正确生成、两个控制器是否成功激活。
 
 ```bash
-ros2 launch litegrip_urdf gazebo.launch.py
+ros2 launch litegrip_description gazebo.launch.py
 ```
 
 该 launch 强制 `hardware_plugin:=gazebo_ros2_control/GazeboSystem`，启动 Gazebo、
@@ -303,7 +303,7 @@ gripper_slider_link1.STL 的 X 范围 = [-0.00095, +0.0235]   （包围盒实测
 
 若取 `stroke = 0.067`，两指将完全重叠穿透。SolidWorks CSV 中右指标注
 `Limit Upper = 0.067`、左指标注 `-0.067`，两者均无法直接使用。
-完整推导见 [docs/design-notes.zh-CN.md](docs/design-notes.zh-CN.md#夹爪几何)。
+完整推导见 [docs/design-notes.zh-CN.md](litegrip_description/docs/design-notes.zh-CN.md#夹爪几何)。
 
 > ⚠️ 把限位改成 `0.042726` 会同时改变模型两端的位形。下文记录的 mesh 与 TF 复核是在
 > mesh 理论值 `0.0435` 上做的，因此模型新的两端位形仍需在运行时重新做 mesh/TF 复核，
@@ -313,7 +313,7 @@ gripper_slider_link1.STL 的 X 范围 = [-0.00095, +0.0235]   （包围盒实测
 
 ## 配置
 
-`urdf/litegrip_urdf.urdf.xacro` 通过 xacro 参数进行参数化：
+`urdf/litegrip_description.urdf.xacro` 通过 xacro 参数进行参数化：
 
 | 参数 | 默认值 | 说明 |
 | --- | --- | --- |
@@ -332,8 +332,8 @@ gripper_slider_link1.STL 的 X 范围 = [-0.00095, +0.0235]   （包围盒实测
 单独展开为纯 URDF（供不支持 xacro 的工具使用）：
 
 ```bash
-xacro $(ros2 pkg prefix litegrip_urdf)/share/litegrip_urdf/urdf/litegrip_urdf.urdf.xacro \
-  -o /tmp/litegrip_urdf.urdf
+xacro $(ros2 pkg prefix litegrip_description)/share/litegrip_description/urdf/litegrip_description.urdf.xacro \
+  -o /tmp/litegrip_description.urdf
 ```
 
 ### 需要标定
@@ -343,7 +343,7 @@ xacro $(ros2 pkg prefix litegrip_urdf)/share/litegrip_urdf/urdf/litegrip_urdf.ur
 `joint_damping` 与 `joint_friction` 同样只是为抑制仿真振荡而选的保守初值，
 应按真实机构进行标定。
 
-→ **[标定指南](docs/calibration-guide.zh-CN.md)** —— 从物理夹爪、Python SDK
+→ **[标定指南](litegrip_description/docs/calibration-guide.zh-CN.md)** —— 从物理夹爪、Python SDK
 一直到上述 xacro 参数的完整逐步标定流程。
 
 ---
@@ -353,7 +353,7 @@ xacro $(ros2 pkg prefix litegrip_urdf)/share/litegrip_urdf/urdf/litegrip_urdf.ur
 把 mock 插件替换为厂商的 ros2_control 硬件接口插件：
 
 ```bash
-ros2 launch litegrip_urdf ros2_control.launch.py hardware_plugin:=<厂商插件名>
+ros2 launch litegrip_description ros2_control.launch.py hardware_plugin:=<厂商插件名>
 ```
 
 你的插件需要为两个关节提供：
@@ -397,7 +397,7 @@ ros2 launch litegrip_urdf ros2_control.launch.py hardware_plugin:=<厂商插件�
 
 | 文档 | 内容 |
 | --- | --- |
-| [docs/calibration-guide.zh-CN.md](docs/calibration-guide.zh-CN.md) | 逐步标定流程，把每个占位值替换为实测值 —— 行程、角度范围、夹持力、速度、阻尼、摩擦 |
-| [docs/design-notes.zh-CN.md](docs/design-notes.zh-CN.md) | 几何推导、关节约定、针对 SolidWorks 导出文件的修订记录、设计决策依据 |
-| [docs/troubleshooting.zh-CN.md](docs/troubleshooting.zh-CN.md) | 已知故障模式及其解决办法，含 Conda 构建失败与 `controller_manager` 命名坑 |
+| [docs/calibration-guide.zh-CN.md](litegrip_description/docs/calibration-guide.zh-CN.md) | 逐步标定流程，把每个占位值替换为实测值 —— 行程、角度范围、夹持力、速度、阻尼、摩擦 |
+| [docs/design-notes.zh-CN.md](litegrip_description/docs/design-notes.zh-CN.md) | 几何推导、关节约定、针对 SolidWorks 导出文件的修订记录、设计决策依据 |
+| [docs/troubleshooting.zh-CN.md](litegrip_description/docs/troubleshooting.zh-CN.md) | 已知故障模式及其解决办法，含 Conda 构建失败与 `controller_manager` 命名坑 |
 | [CHANGELOG.md](CHANGELOG.md) | 版本历史（英文） |
