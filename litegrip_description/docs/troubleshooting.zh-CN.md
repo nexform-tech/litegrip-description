@@ -1,6 +1,6 @@
 # 故障排查
 
-`litegrip_urdf` 的已知故障模式及其解决办法。每条给出症状、原因与修复方式；
+`litegrip_description` 的已知故障模式及其解决办法。每条给出症状、原因与修复方式；
 凡实际复现过的，附上可用于定位的确切命令输出。
 
 [English](troubleshooting.md) · **简体中文**

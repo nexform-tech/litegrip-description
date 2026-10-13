@@ -1,6 +1,6 @@
 # Design Notes
 
-Why `litegrip_urdf` is built the way it is: the derivation of its geometry, the
+Why `litegrip_description` is built the way it is: the derivation of its geometry, the
 conventions a consumer must respect, and the complete record of what was changed
 relative to the original SolidWorks export.
 
@@ -20,7 +20,7 @@ stages of that chain.
 | 1 | `夹爪urdf2.csv` | SolidWorks source of truth. Both joints are named `gripper_slide_joint` — **duplicate, illegal**. Travel limits `0.067` (right) and `-0.067` (left). |
 | 2 | `夹爪urdf改前.urdf` | Joint names still duplicated. Limits `0.067` / `-0.067`. **Fails to parse:** `joint 'gripper_slide_joint' is not unique`. |
 | 3 | `夹爪urdf2 (1).urdf` | Names split into `_right` / `_left`. Limits both written as `0.043.5` — a typo with a second decimal point. **Fails to parse:** `upper value (0.043.5) is not a valid float`. |
-| 4 | `litegrip_urdf` (this package) | Parses cleanly. Limits parametrized, defaulting to the measured value `0.042726`. |
+| 4 | `litegrip_description` (this package) | Parses cleanly. Limits parametrized, defaulting to the measured value `0.042726`. |
 
 Both parse failures were confirmed by running `check_urdf` against the respective files.
 Note that stage 3 already attempted to correct the travel limit — but the intermediate
