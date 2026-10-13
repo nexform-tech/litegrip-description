@@ -1,6 +1,6 @@
 # 设计说明
 
-`litegrip_urdf` 为何如此构建：几何参数的推导过程、使用方必须遵守的约定，
+`litegrip_description` 为何如此构建：几何参数的推导过程、使用方必须遵守的约定，
 以及相对于原始 SolidWorks 导出文件的完整修订记录。
 
 [English](design-notes.md) · **简体中文**
@@ -18,7 +18,7 @@
 | 1 | `夹爪urdf2.csv` | SolidWorks 的事实源。两个关节同名 `gripper_slide_joint` —— **重名，非法**。行程限位分别为 `0.067`（右）与 `-0.067`（左）。 |
 | 2 | `夹爪urdf改前.urdf` | 关节名仍重名，限位 `0.067` / `-0.067`。**无法解析**：`joint 'gripper_slide_joint' is not unique`。 |
 | 3 | `夹爪urdf2 (1).urdf` | 关节名已拆为 `_right` / `_left`。限位均写作 `0.043.5` —— 多了一个小数点的笔误。**无法解析**：`upper value (0.043.5) is not a valid float`。 |
-| 4 | `litegrip_urdf`（本包） | 可正常解析，限位参数化为实测值 `0.042726`。 |
+| 4 | `litegrip_description`（本包） | 可正常解析，限位参数化为实测值 `0.042726`。 |
 
 两处解析失败均已通过 `check_urdf` 实测确认。注意阶段 3 已经尝试修正行程限位 ——
 但中间值 `0.043.5` 无法解析，因此两份中间文件都不能作为参照。

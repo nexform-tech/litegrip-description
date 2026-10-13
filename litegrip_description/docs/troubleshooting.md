@@ -1,6 +1,6 @@
 # Troubleshooting
 
-Known failure modes for `litegrip_urdf` and how to resolve them. Each entry states the
+Known failure modes for `litegrip_description` and how to resolve them. Each entry states the
 symptom, the cause, and the fix — and, where it was reproduced, the exact command output
 that identifies it.
 
