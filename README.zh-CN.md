@@ -45,7 +45,7 @@ LiteGrip 是两指平行夹爪，由两个独立的 prismatic 关节驱动，每
 
 ```text
 <仓库根>/
-├── README.md、README.zh-CN.md、CHANGELOG.md、LICENSE、AGENTS.md
+├── README.md、README.zh-CN.md、CHANGELOG.md、LICENSE
 ├── .github/workflows/                    ci.yml、release.yml
 └── litegrip_description/                 ROS 2 功能包（colcon 会递归查找 package.xml）
     ├── package.xml

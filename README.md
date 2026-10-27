@@ -45,7 +45,7 @@ only installs `urdf/`, `launch/`, `config/`, and `meshes/` into `share/litegrip_
 
 ```text
 <repository root>/
-├── README.md, README.zh-CN.md, CHANGELOG.md, LICENSE, AGENTS.md
+├── README.md, README.zh-CN.md, CHANGELOG.md, LICENSE
 ├── .github/workflows/                    ci.yml, release.yml
 └── litegrip_description/                 the ROS 2 package (colcon finds package.xml recursively)
     ├── package.xml
