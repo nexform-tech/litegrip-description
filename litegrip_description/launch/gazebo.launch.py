@@ -6,6 +6,10 @@
                         ros-$ROS_DISTRO-gazebo-ros2-control
    首次运行请重点检查：模型是否正确生成、控制器是否成功激活。
 
+⚠ Gazebo Classic 在 URDF→SDF 转换时会丢掉 <mimic>：总控关节与两个手指关节
+   会作为三个独立关节加载，两指不会跟随总控关节。这是该仿真器的限制。
+   物理仿真请用支持 mimic 约束的仿真器（MuJoCo、PyBullet）。
+
 说明：此 launch 不额外发布 base_link -> base_footprint 的静态变换。
 URDF 中已定义 base_footprint 为无惯性根节点且与 base_link 位姿重合，
 另加静态变换会造成 TF 树出现两个父节点而报错。

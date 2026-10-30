@@ -83,3 +83,68 @@ jobs:
           print("\n".join(problems) if problems else "all referenced meshes exist")
           sys.exit(1 if problems else 0)
           PY
+
+      - name: Check the single-actuator contract
+        run: |
+          python3 - <<'PY'
+          import sys
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          # The real gripper has one motor and one transmission. That must stay
+          # visible in the expanded model: one commandable master joint, both
+          # fingers mimicking it with the documented multiplier/offset, and a
+          # ros2_control block that declares only the master joint.
+          URDF = Path("litegrip_description/urdf/litegrip_description.urdf")
+          MASTER = "gripper_opening_joint"
+          FINGERS = ("gripper_slide_joint_right", "gripper_slide_joint_left")
+          MULTIPLIER = -0.5
+
+          root = ET.parse(URDF).getroot()
+          joints = {j.get("name"): j for j in root.findall("joint")}
+          problems = []
+
+          master = joints.get(MASTER)
+          if master is None:
+              problems.append(f"missing master joint {MASTER}")
+          elif master.get("type") != "prismatic":
+              problems.append(f"{MASTER} is {master.get('type')}, expected prismatic")
+
+          offset = None
+          for finger in FINGERS:
+              joint = joints.get(finger)
+              if joint is None:
+                  problems.append(f"missing finger joint {finger}")
+                  continue
+              mimic = joint.find("mimic")
+              if mimic is None:
+                  problems.append(f"{finger} is not a <mimic> follower")
+                  continue
+              if mimic.get("joint") != MASTER:
+                  problems.append(f"{finger} mimics {mimic.get('joint')}, expected {MASTER}")
+              if abs(float(mimic.get("multiplier", "0")) - MULTIPLIER) > 1e-9:
+                  problems.append(f"{finger} multiplier is {mimic.get('multiplier')}, expected {MULTIPLIER}")
+              finger_offset = float(mimic.get("offset", "0"))
+              if offset is None:
+                  offset = finger_offset
+              elif abs(finger_offset - offset) > 1e-9:
+                  problems.append(f"{finger} offset {finger_offset} differs from {offset}")
+
+          if master is not None and offset is not None:
+              upper = float(master.find("limit").get("upper"))
+              if abs(upper - 2.0 * offset) > 1e-9:
+                  problems.append(f"{MASTER} upper {upper} is not 2 x offset {offset}")
+
+          blocks = root.findall("ros2_control")
+          if len(blocks) != 1:
+              problems.append(f"expected one <ros2_control> block, found {len(blocks)}")
+          else:
+              declared = {j.get("name") for j in blocks[0].findall("joint")}
+              if declared != {MASTER}:
+                  problems.append(
+                      f"<ros2_control> declares {sorted(declared)}, expected [{MASTER}]"
+                  )
+
+          print("\n".join(problems) if problems else "single-actuator contract holds")
+          sys.exit(1 if problems else 0)
+          PY

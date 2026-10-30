@@ -37,7 +37,7 @@ colcon build --packages-select litegrip_description \
 
 ---
 
-## `gui:=false` 会使手指 link 从 TF 中消失
+## `gui:=false` 会使可动 link 从 TF 中消失
 
 **症状。** 使用 `ros2 launch litegrip_description display.launch.py gui:=false` 时：
 
@@ -46,9 +46,10 @@ colcon build --packages-select litegrip_description \
   `Invalid frame ID "gripper_slider_link1"`。
 
 **原因。** `display.launch.py` 中只有 `joint_state_publisher_gui` 发布 `/joint_states`。
-`gui:=false` 后没有任何节点发布关节状态，`robot_state_publisher` 拿不到两个 prismatic
-关节的值，也就无法计算其变换。固定的 `base_footprint → base_link` 变换不依赖关节状态，
-因而不受影响。`ros2 topic info /joint_states` 会显示 `Publisher count: 0`。
+`gui:=false` 后没有任何节点发布关节状态，`robot_state_publisher` 拿不到
+`gripper_opening_joint` 的值，也就无法计算它；mimic 两指同样无从推算。固定的
+`base_footprint → base_link` 变换不依赖关节状态，因而不受影响。
+`ros2 topic info /joint_states` 会显示 `Publisher count: 0`。
 
 **修复。** 与 launch 同时启动无界面发布器：
 
@@ -66,11 +67,10 @@ ros2 run joint_state_publisher joint_state_publisher
 
 ```bash
 ros2 topic pub --once /gripper_controller/commands \
-  std_msgs/msg/Float64MultiArray "{data: [0.05, 0.05]}"   # stroke 为 0.042726；0.05 故意作为越界测试值
+  std_msgs/msg/Float64MultiArray "{data: [0.1]}"   # 2 × stroke 为 0.085452；0.1 故意作为越界测试值
 ros2 topic echo --once /joint_states
 # position:
-# - 0.05
-# - 0.05
+# - 0.1
 ```
 
 **原因。** `mock_components/GenericSystem` 把 position 指令原样回读为 state，
@@ -88,7 +88,6 @@ ros2 topic echo --once /joint_states
 
 ```text
 effort:
-- .nan
 - .nan
 ```
 
@@ -114,7 +113,7 @@ mock 硬件没有 effort 值可发布。
 # ✅ 正确
 gripper_controller:
   ros__parameters:
-    joints: [gripper_slide_joint_right, gripper_slide_joint_left]
+    joints: [gripper_opening_joint]
 ```
 
 而不是嵌套在 `controller_manager` 之下：
@@ -210,7 +209,7 @@ ros2 run tf2_ros tf2_echo base_footprint base_link
 
 若 `/robot_description` 为空，说明 `robot_state_publisher` 未启动或展开 xacro 失败 ——
 请检查其终端输出。若 `/robot_description` 正常但变换缺失，见
-[`gui:=false` 会使手指 link 从 TF 中消失](#guifalse-会使手指-link-从-tf-中消失)。
+[`gui:=false` 会使可动 link 从 TF 中消失](#guifalse-会使可动-link-从-tf-中消失)。
 
 本机当前标定记录为：`zero_position_rad = 0.041390`、
 `max_position_rad = -1.272793`、`travel_range_rad = 1.314183`、

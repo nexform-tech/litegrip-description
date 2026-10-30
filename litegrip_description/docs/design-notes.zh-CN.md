@@ -77,10 +77,10 @@ q = 0.067 - 0.0235 = 0.0435
 
 以下将 URDF 模型端点与本机卡尺实测值对照；更新后的限位仍需在运行时复核：
 
-| 指令 | 手指原点 | 内侧面 | 开口 |
-| --- | --- | --- | --- |
-| `[0.0, 0.0]` | `x = ∓0.067` | 理论 `x = ∓0.0435` | 实测 **86.960 mm** |
-| `[0.042726, 0.042726]` | 实测闭合位置 | 实测闭合位置 | 实测间隙 **1.508 mm** |
+| 开口（`gripper_opening_joint`） | 手指 `q` | 手指原点 | 内侧面 | 开口 |
+| --- | --- | --- | --- | --- |
+| `0.085452`（全开） | `0.0` | `x = ∓0.067` | 理论 `x = ∓0.0435` | 实测 **86.960 mm** |
+| `0.0`（闭合） | `0.042726` | 实测闭合位置 | 实测闭合位置 | 实测间隙 **1.508 mm** |
 
 `q = 0` 时的手指原点可用于检查模型。由于实测闭合间隙并非理想 mesh 接触值，
 更新后的 `0.042726` 限位仍需运行时做 mesh/TF 验证，暂不能直接称为几何验证完成。
@@ -98,22 +98,29 @@ q = 0.067 - 0.0235 = 0.0435
 
 ---
 
-## 关节符号约定
+## 开口约定
 
 **这是本模型最常见的集成错误来源。**
 
-两个关节的 axis 方向相反（`+X` 与 `-X`）。由于 `JointGroupPositionController` 会把每个值
-沿各自关节的 axis 施加到对应关节上，**两个元素必须同号**才能使两指对称运动：
+真机只有一台电机、一套传动，因此模型只暴露**一个**可命令关节。
+`gripper_opening_joint` 是 prismatic 关节，取值是开口行程，单位米；两个手指关节都是
+它的 `<mimic>` 跟随关节：
+
+```text
+q_finger = -0.5 × opening + stroke
+```
 
 | 指令 | 结果 |
 | --- | --- |
-| `[0.0, 0.0]` | 完全张开 |
-| `[0.042726, 0.042726]` | 实测闭合标定位置 |
-| `[0.02, -0.02]` | ❌ 两指同向运动 —— 不是抓取 |
+| `0.0` | 实测闭合标定位置（两指位于 `q = stroke`） |
+| `0.042726` | 半开 |
+| `0.085452` | 完全张开（两指位于 `q = 0`） |
 
-axis 相反是 CAD 模型本身的属性，并非此处引入的缺陷：SolidWorks CSV 中一指标注
-`Joint Axis X = 1`、另一指标注 `-1`。又因为两关节均为 `lower = 0`、`upper = 0.042726`，
-「一正一负」的对称直觉不仅错误，还会使其中一个关节越界。
+手指关节的 axis 仍然相反（`+X` 与 `-X`，直接来自 SolidWorks CSV：一指标注
+`Joint Axis X = 1`、另一指标注 `-1`）。两个 mimic 使用**相同**的
+`multiplier="-0.5"`，恰恰是因为 axis 相反：`q_finger` 是沿各自关节 axis 的位移，
+同一个 multiplier 才能让两指对称运动。不要给两指下发独立指令，也不要期待二元指令
+数组 —— 两指都没有命令接口。
 
 ---
 
@@ -157,6 +164,7 @@ RViz 配置使用的固定坐标系即为 `base_footprint`。
 | 9 | 修正 `config/joint_names_*.yaml` | 原文件含空串占位与重复项：`['', 'gripper_slide_joint', 'gripper_slide_joint', ]` |
 | 10 | 移除多余的 `base_link → base_footprint` 静态变换 | 方向写反，且会与 URDF 的根节点定义冲突，见上文 |
 | 11 | 补全 `package.xml` 依赖声明 | 原导出缺 `gazebo_ros`、`tf`、`rostopic`、`joint_state_publisher` |
+| 12 | 新增总控关节 `gripper_opening_joint`，两指改为 `<mimic>` 跟随 | 真机只有一台电机、一套传动。两个可独立命令的关节描述的是不存在的硬件，也让 MoveIt 规划组引用了 URDF 并不提供的关节 |
 
 第 1–3 项均已通过尝试解析对应源文件加以确认，见[来源沿革](#来源沿革)。
 
@@ -182,16 +190,34 @@ RViz 配置使用的固定坐标系即为 `base_footprint`。
 
 ## 设计决策
 
-### 为何选用 `JointGroupPositionController` 而非 `GripperActionController`
+### 单传动接口
 
-夹爪天然适合 Action 接口 —— 调用方真正想要的操作是「闭合直到堵转」。
-障碍在于 `GripperActionController` 只接受**单个**关节。要用它驱动两指，就需要为第二指
-配置 `<mimic>` 关节，而 **`<mimic>` 在 ros2_control 中不会自动生效** ——
-它取决于硬件接口或仿真器的支持，并非每个厂商插件都提供。
+真机只有一台电机、一套传动；两指本来就不能独立控制。模型现在如实表达这一点。
+`gripper_opening_joint`（prismatic，由无几何 dummy link `gripper_opening_link` 承载）
+是唯一可命令的关节，两个手指关节都是它的 `<mimic>` 跟随关节：
 
-`JointGroupPositionController` 接受关节数组，不依赖 mimic 支持，因此在 mock、Gazebo
-与真机上行为一致。代价是调用方需要通过话题发送 `Float64MultiArray`，而非调用 Action。
-若你需要 Action 接口且硬件支持 `<mimic>`，该替换是受支持的做法。
+```text
+q_finger = -0.5 × opening + stroke
+```
+
+`opening = 0` 是实测闭合位，`opening = 2 × stroke` 是全开位。MoveIt 规划组、
+`<ros2_control>` 块和关节滑块都只暴露一个关节。
+
+`<mimic>` 会被 `robot_state_publisher` 与 MoveIt 解析，因此派生出的手指位姿无需额外
+连线就会出现在 TF 和规划模型中。**ros2_control 本身不计算 `<mimic>`** —— 它只按硬件
+组件声明的接口工作。所以 ros2_control 块里两指没有命令/状态接口：总控关节就是全部
+接口。
+
+### 为何 mock 仍用 `JointGroupPositionController`
+
+现在只有一个可命令关节，`position_controllers/GripperActionController` 正好适用 ——
+它只接受单个关节，并直接表达「闭合直到堵转」。真机链路
+（`litegrip_ros2_control`）正是因此选用它。
+
+本包 standalone 的 mock 仍保留 `JointGroupPositionController`：它通过话题接收单元素
+关节数组，命令通路与机械臂关节的写法一致，也不依赖 `GripperActionController` 的
+参数（goal tolerance、堵转检测）。代价是发送话题 `Float64MultiArray` 而不是调用
+Action。若你偏好 Action 接口，把 mock 换成 Action 控制器是受支持的做法。
 
 ### 为何碰撞几何复用视觉 STL
 
