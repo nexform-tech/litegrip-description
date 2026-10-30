@@ -21,10 +21,10 @@ not — read it before depending on any part of this package.
 
 | Capability | Status | Evidence |
 | --- | --- | --- |
-| URDF/xacro parses | ✅ Verified | `check_urdf` reports root `base_footprint` → `base_link` → 2 finger links |
+| URDF/xacro parses | ✅ Verified | `check_urdf` reports root `base_footprint` → `base_link` → master link + 2 mimic finger links |
 | `colcon build` | ✅ Verified | Builds on ROS 2 Humble; see [known environment issue](litegrip_description/docs/troubleshooting.md#conda-python3-breaks-the-build) |
 | `display.launch.py` | ✅ Verified | Launches, `stroke:=` override propagates into the URDF |
-| `ros2_control.launch.py` | ✅ Verified | Both controllers reach `active`; position command round-trip confirmed |
+| `ros2_control.launch.py` | ✅ Verified | Both controllers reach `active`; one-value opening command round-trip confirmed |
 | Joint geometry (stroke ↔ opening) | ⚠️ **Re-verification pending** | Finger origins and inner-face positions were confirmed via TF at the mesh-theoretical travel limit `0.0435`; the shipped limit is now the measured `0.042726`, so both endpoints need re-checking |
 | `gazebo.launch.py` | ⚠️ **Not verified** | Gazebo is not installed in the verification environment; never executed |
 | Parameters `effort`, `velocity` | ⚠️ **Placeholder** | SolidWorks export defaults, not measured. See [Calibration required](#calibration-required) |
@@ -37,8 +37,17 @@ Re-verify on your own platform before relying on any ✅ above.
 
 ## Overview
 
-LiteGrip is a two-finger parallel gripper driven by two independent prismatic joints,
-one per finger. The two fingers move symmetrically along the X axis of `base_link`.
+LiteGrip is a two-finger parallel gripper with **one transmission**: a single motor
+drives both fingers apart along rails. The model states that fact explicitly. The only
+commandable joint is the master `gripper_opening_joint`, a prismatic joint whose value is
+the opening travel in metres; the two finger joints are its `<mimic>` followers:
+
+```text
+q_finger = -0.5 × opening + stroke
+```
+
+`opening = 0` is the measured closed position, `opening = 2 × stroke` is fully open.
+MoveIt, the ros2_control block and the joint slider therefore expose one joint, not two.
 
 This package is a pure description package. It contains no compiled code — `CMakeLists.txt`
 only installs `urdf/`, `launch/`, `config/`, and `meshes/` into `share/litegrip_description/`.
@@ -128,7 +137,8 @@ source install/setup.bash
 ros2 launch litegrip_description display.launch.py
 ```
 
-Drag the sliders in the `joint_state_publisher_gui` window to drive both fingers.
+Drag the `gripper_opening_joint` slider in the `joint_state_publisher_gui` window; both
+fingers follow it through `<mimic>`. There is no independent slider for either finger.
 
 | Argument | Default | Description |
 | --- | --- | --- |
@@ -146,11 +156,12 @@ ros2 launch litegrip_description display.launch.py gui:=false       # no slider 
 ros2 launch litegrip_description display.launch.py stroke:=0.02     # override joint travel
 ```
 
-> ⚠️ **`gui:=false` removes the finger links from TF.** `joint_state_publisher_gui`
+> ⚠️ **`gui:=false` removes the movable links from TF.** `joint_state_publisher_gui`
 > is the only node in this launch that publishes `/joint_states`, so with `gui:=false`
-> the prismatic joints have no state and `robot_state_publisher` cannot compute their
-> transforms. Only the fixed transform `base_footprint → base_link` remains. If you
-> need the finger frames without the GUI, start the headless publisher too:
+> the opening joint has no state, `robot_state_publisher` cannot compute it, and the
+> mimic fingers cannot be derived either. Only the fixed transform
+> `base_footprint → base_link` remains. If you need the finger frames without the GUI,
+> start the headless publisher too:
 >
 > ```bash
 > ros2 run joint_state_publisher joint_state_publisher
@@ -193,23 +204,24 @@ ros2 control list_controllers
 # Both joint_state_broadcaster and gripper_controller must report [active].
 
 ros2 control list_hardware_interfaces
-# 2 command interfaces (claimed) + 4 state interfaces = 6 total.
+# 1 command interface (claimed) + 2 state interfaces = 3 total.
 
-# Command the gripper (order: right finger, left finger)
+# Command the opening (metres, 0 = closed, 0.085452 = fully open)
 ros2 topic pub --once /gripper_controller/commands \
-  std_msgs/msg/Float64MultiArray "{data: [0.042726, 0.042726]}"
+  std_msgs/msg/Float64MultiArray "{data: [0.042726]}"
 
 ros2 topic echo /joint_states
 ```
 
 > ⚠️ **The mock hardware does not clamp out-of-range commands.** In the configuration
-> above, `[0.05, 0.05]` exceeds `stroke = 0.042726` and is echoed back as `0.05` without
+> above, `[0.1]` exceeds `2 * stroke = 0.085452` and is echoed back as `0.1` without
 > error or clamping, despite the `min`/`max` parameters declared on the command
 > interface. The travel limits are descriptive metadata in this configuration, not an
 > enforced constraint. Clamp commands in your own application layer.
 >
-> ℹ️ `/joint_states` reports `effort: [nan, nan]`. The mock hardware declares no effort
-> state interface, so no value exists to publish. This is expected and not an error.
+> ℹ️ `/joint_states` reports `effort: nan` for the master joint. The mock hardware
+> declares no effort state interface, so no value exists to publish. This is expected
+> and not an error.
 
 ### 3. Gazebo simulation
 
@@ -224,16 +236,27 @@ ros2 launch litegrip_description gazebo.launch.py
 This launch forces `hardware_plugin:=gazebo_ros2_control/GazeboSystem` and starts Gazebo,
 spawns the model, then activates `joint_state_broadcaster` followed by `gripper_controller`.
 
+> ⚠️ **Gazebo Classic does not preserve `<mimic>` when converting URDF to SDF.** The
+> master joint and the two finger joints will load as three independent joints, so the
+> fingers will not follow the opening joint. This is a limitation of that simulator, not
+> of the model. Use MuJoCo, PyBullet, or a simulator that supports mimic constraints for
+> physics work; use the ROS 2 side for control-path work.
+
 ---
 
 ## Interfaces
 
 ### Joints
 
-| Joint | Type | Axis | Origin in `base_link` | Limit |
-| --- | --- | --- | --- | --- |
-| `gripper_slide_joint_right` | prismatic | `+X` | `(-0.067, 0.0010833, 0.034083)` | `[0, 0.042726]` m |
-| `gripper_slide_joint_left` | prismatic | `-X` | `( 0.067, -0.0010833, 0.034083)` | `[0, 0.042726]` m |
+| Joint | Type | Axis | Origin in `base_link` | Limit | Role |
+| --- | --- | --- | --- | --- | --- |
+| `gripper_opening_joint` | prismatic | `+X` | `(0, 0, 0)` | `[0, 0.085452]` m | master; the only commandable joint |
+| `gripper_slide_joint_right` | prismatic | `+X` | `(-0.067, 0.0010833, 0.034083)` | `[0, 0.042726]` m | `<mimic>` of `gripper_opening_joint` |
+| `gripper_slide_joint_left` | prismatic | `-X` | `( 0.067, -0.0010833, 0.034083)` | `[0, 0.042726]` m | `<mimic>` of `gripper_opening_joint` |
+
+Both fingers use `multiplier="-0.5"` and `offset="stroke"`, so
+`q_finger = -0.5 × opening + stroke`. The master's upper limit is `2 × stroke`; the finger
+limits are `stroke`.
 
 ### Links
 
@@ -241,6 +264,7 @@ spawns the model, then activates `joint_state_broadcaster` followed by `gripper_
 | --- | --- | --- | --- |
 | `base_footprint` | — | root, no inertia | 0 |
 | `base_link` | `base_footprint` | `base_footprint_joint` (fixed) | 0.5063 kg |
+| `gripper_opening_link` | `base_link` | `gripper_opening_joint` | 0 (geometry-free dummy) |
 | `gripper_slider_link1` | `base_link` | `gripper_slide_joint_right` | 0.03545 kg |
 | `gripper_slider_link2` | `base_link` | `gripper_slide_joint_left` | 0.03545 kg |
 
@@ -253,42 +277,40 @@ would emit a `root link has an inertia` warning and silently ignore `base_link`'
 
 | Joint | Command interfaces | State interfaces |
 | --- | --- | --- |
-| `gripper_slide_joint_right` | `position` | `position`, `velocity` |
-| `gripper_slide_joint_left` | `position` | `position`, `velocity` |
+| `gripper_opening_joint` | `position` | `position`, `velocity` |
 
-**6 interfaces in total per copy of the model.** (An earlier revision of this document
-stated 4; the correct count is 2 command + 4 state.)
+**3 interfaces in total per copy of the model** (1 command + 2 state). The two fingers are
+`<mimic>` and deliberately have no interfaces: a real gripper has one transmission.
 
 ### Controller
 
 `position_controllers/JointGroupPositionController` on `/gripper_controller`.
 
-The command array order is the order in `config/litegrip_controllers.yaml`:
+The command array has exactly one entry:
 
-| Index | Joint |
-| --- | --- |
-| `[0]` | `gripper_slide_joint_right` |
-| `[1]` | `gripper_slide_joint_left` |
+| Index | Joint | Meaning |
+| --- | --- | --- |
+| `[0]` | `gripper_opening_joint` | Opening travel in metres; `0` closed, `0.085452` fully open |
 
 ---
 
-## ⚠️ Joint sign convention — read before writing a controller
+## ⚠️ Opening convention — read before writing a controller
 
-**The two joints have opposite `axis` directions: right is `+X`, left is `-X`.
-Therefore both joints take the *same sign* to move the fingers symmetrically.**
+There is one commandable joint, `gripper_opening_joint`, and its value is the **opening
+travel** in metres:
 
-| Command | Result |
+| Opening | Result |
 | --- | --- |
-| `[0.0, 0.0]` | Fully open — model inner faces at `x = ∓0.0435`, model opening **87 mm**; this gripper calipers at **86.960 mm** |
-| `[0.02, 0.02]` | Partially closed |
-| `[0.042726, 0.042726]` | Measured closed calibration position — this gripper calipers at a **1.508 mm** gap |
+| `0.0` | Measured closed position — fingers at `q = stroke`; this gripper calipers at a **1.508 mm** gap |
+| `0.042726` | Half open |
+| `0.085452` | Fully open — fingers at `q = 0`; model inner faces at `x = ∓0.0435`, model opening **87 mm**; this gripper calipers at **86.960 mm** |
 
-**Writing a controller on the intuition that the two values should have opposite signs
-will drive the fingers in opposite directions instead of together.** This has been
-confirmed by direct measurement: at `[0, 0]` the finger origins sit at `x = ∓0.067`
-(model inner faces at `∓0.0435`), and at the mesh-theoretical closure `0.0435` they would
-sit at `x = ∓0.0235` (inner faces at `x = 0`, zero gap). The shipped limit `0.042726`
-stops just short of that, at the measured closed position.
+The two finger joints share the same `<mimic>` multiplier (`-0.5`) even though their axes
+point opposite ways. This is deliberate: `q_finger` is a displacement along each joint's
+own axis, so the same multiplier makes them open and close together. Do not send independent
+finger commands — neither finger has a command interface. Writing a controller that expects
+two values, or that negates one finger against the other, describes a mechanism this
+gripper does not have.
 
 ### Why the travel limit is 0.042726 and not 0.067
 
@@ -335,6 +357,7 @@ left; both are unusable as exported. Full derivation in
 | `joint_damping` | `0.05` | Joint damping ⚠ placeholder |
 | `joint_friction` | `0.02` | Joint friction ⚠ placeholder |
 | `hardware_plugin` | `mock_components/GenericSystem` | ros2_control hardware plugin |
+| `include_mock_ros2_control` | `true` | Emit this package's mock `<ros2_control>` block; set `false` when a composition file adds a real hardware component for the same joint |
 
 **Overriding arguments.** `stroke`, `effort`, and `velocity` are exposed as launch
 arguments by both `display.launch.py` and `ros2_control.launch.py`, so they can be set on
@@ -370,14 +393,16 @@ Substitute your vendor's ros2_control hardware interface plugin for the mock:
 ros2 launch litegrip_description ros2_control.launch.py hardware_plugin:=<vendor_plugin_name>
 ```
 
-Your plugin must provide, for both joints:
+Your plugin must provide, for the single master joint `gripper_opening_joint`:
 
 - a `position` **command** interface
 - `position` and `velocity` **state** interfaces
 
-This package ships no vendor plugin. If your hardware exposes `velocity` or `effort`
-commands instead of `position`, the `<ros2_control>` block in the xacro and the controller
-type in `config/litegrip_controllers.yaml` both need to change.
+If your deployment adds its own `<ros2_control>` block for that joint, pass
+`include_mock_ros2_control:=false`; two blocks declaring the same joint make
+ros2_control refuse to load. This package ships no vendor plugin. If your hardware exposes
+`velocity` or `effort` commands instead of `position`, the `<ros2_control>` block in the
+xacro and the controller type in `config/litegrip_controllers.yaml` both need to change.
 
 ---
 
@@ -401,12 +426,12 @@ The following are **incomplete** and must be resolved before this package is pub
   With only 3 links the collision-checking cost is acceptable, but for
   performance-sensitive integration replace the `<collision>` geometry with simplified
   primitives (box/cylinder).
-- **No gripper action interface.** The default `JointGroupPositionController` accepts
-  a joint array over a topic. An Action-based interface would require
-  `position_controllers/GripperActionController`, which accepts only a *single* joint and
-  therefore needs a `<mimic>` joint for the second finger — and `<mimic>` does not take
-  effect automatically in ros2_control. This is why the multi-joint controller is the
-  default.
+- **The mock pipeline uses a topic, not an action.** The default
+  `JointGroupPositionController` accepts a one-element joint array over a topic. The model
+  now has exactly one commandable joint, so `position_controllers/GripperActionController`
+  also fits; that is what `litegrip_ros2_control` uses on real hardware. This package keeps
+  the group controller for the standalone mock so the command path stays consistent with
+  the arm-joint convention.
 - **No `.stl` → simplification, no collision padding, no `<safety_controller>` limits,
   no transmissions.** The original SolidWorks export defined none of these.
 

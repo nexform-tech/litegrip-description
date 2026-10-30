@@ -39,7 +39,7 @@ interpreter environment that fails in less obvious ways later.
 
 ---
 
-## `gui:=false` removes the finger links from TF
+## `gui:=false` removes the movable links from TF
 
 **Symptom.** With `ros2 launch litegrip_description display.launch.py gui:=false`:
 
@@ -49,9 +49,10 @@ interpreter environment that fails in less obvious ways later.
 
 **Cause.** `joint_state_publisher_gui` is the only node in `display.launch.py` that
 publishes `/joint_states`. With `gui:=false` nothing publishes joint states, so
-`robot_state_publisher` has no value for the two prismatic joints and cannot compute their
-transforms. The fixed `base_footprint → base_link` transform is unaffected because it does
-not depend on joint state. `ros2 topic info /joint_states` reports `Publisher count: 0`.
+`robot_state_publisher` has no value for `gripper_opening_joint` and cannot compute it;
+the mimic fingers cannot be derived either. The fixed `base_footprint → base_link`
+transform is unaffected because it does not depend on joint state.
+`ros2 topic info /joint_states` reports `Publisher count: 0`.
 
 **Fix.** Start the headless publisher alongside the launch:
 
@@ -69,11 +70,10 @@ All three frames then resolve.
 
 ```bash
 ros2 topic pub --once /gripper_controller/commands \
-  std_msgs/msg/Float64MultiArray "{data: [0.05, 0.05]}"   # stroke is 0.042726
+  std_msgs/msg/Float64MultiArray "{data: [0.1]}"   # 2 * stroke is 0.085452
 ros2 topic echo --once /joint_states
 # position:
-# - 0.05
-# - 0.05
+# - 0.1
 ```
 
 **Cause.** `mock_components/GenericSystem` echoes each position command back as state
@@ -93,7 +93,6 @@ assume the controller or the hardware will reject an out-of-range value.
 
 ```text
 effort:
-- .nan
 - .nan
 ```
 
@@ -121,7 +120,7 @@ top-level node section**, keyed by controller name:
 # ✅ Correct
 gripper_controller:
   ros__parameters:
-    joints: [gripper_slide_joint_right, gripper_slide_joint_left]
+    joints: [gripper_opening_joint]
 ```
 
 Not nested underneath `controller_manager`:
@@ -226,7 +225,7 @@ ros2 run tf2_ros tf2_echo base_footprint base_link
 If `/robot_description` is empty, `robot_state_publisher` did not start or failed to
 expand the xacro — check its console output. If the transform is missing while
 `/robot_description` is present, see
-[`gui:=false` removes the finger links from TF](#guifalse-removes-the-finger-links-from-tf).
+[`gui:=false` removes the movable links from TF](#guifalse-removes-the-movable-links-from-tf).
 
 The current calibration record for this unit is `zero_position_rad = 0.041390`,
 `max_position_rad = -1.272793`, `travel_range_rad = 1.314183`, and

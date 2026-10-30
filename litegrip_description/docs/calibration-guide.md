@@ -46,21 +46,28 @@ number.
 | --- | --- | --- | --- |
 | **Motor position** (rad) | `+0.041390` (measured on this unit) | `-1.272793` (measured on this unit) | **Decreases** as the gripper opens |
 | **SDK position** (mm) | `0` | `max_stroke_mm` (= 85.452) | Increases as the gripper opens |
-| **URDF joint** `q` (m) | `0.042726` | `0.0` | **Decreases** as the gripper opens |
+| **URDF master** `gripper_opening_joint` (m) | `0.0` | `0.085452` (= `2 × stroke`) | Increases as the gripper opens |
+| **URDF finger** `q` (m) | `0.042726` | `0.0` | **Decreases** as the gripper opens |
 
 The rad values above come from this unit's endpoint calibration; they must be re-measured
 after changing a motor, adjusting the mechanism, or a coupling slip.
 
-**Conversions.** Let `p` be SDK position (mm), `q` the URDF joint value (m), `r` the motor
-position (rad), `r_closed` the closed-limit rad value, and `k` = `rad_to_mm`.
+**Conversions.** Let `p` be SDK position (mm), `o` the master opening (m), `q` the finger
+joint value (m), `r` the motor position (rad), `r_closed` the closed-limit rad value, and
+`k` = `rad_to_mm`.
 
 ```text
 p = (r_closed - r) * k                    r = r_closed - p / k
-q = 0.042726 * (1 - p / 85.452)           p = 85.452 * (1 - q / 0.042726)
+o = p / 1000                              p = o * 1000
+q = 0.042726 * (1 - p / 85.452)           = 0.042726 - o / 2
 ```
 
-Check the bridge against the geometry: `p = 0` (closed) gives `q = 0.042726` ✓;
-`p = 85.452` (open) gives `q = 0` ✓.
+The master joint is what ros2_control and MoveIt command, and it maps **one-to-one** to
+the SDK's millimetre position: `o = p / 1000`. Each finger is then derived by
+`q = 0.042726 - o / 2`, which is the URDF's `<mimic multiplier="-0.5" offset="0.042726">`.
+
+Check the bridge against the geometry: `p = 0` (closed) gives `o = 0` and `q = 0.042726` ✓;
+`p = 85.452` (open) gives `o = 0.085452` and `q = 0` ✓.
 
 ---
 
@@ -141,8 +148,10 @@ mean `86.956 mm`, mechanical stroke mean `85.452 mm`, open-end spread `0.06 mm`.
 were stable, and the final value adopted is `rad_to_mm = 65.0229 mm/rad`.
 
 The per-finger figure is what the URDF's `stroke` parameter holds (written as `0.042726` m
-this time), because the model has one prismatic joint per finger. The 85.452 mm figure is
-what the SDK's `max_stroke_mm` holds, because SDK position spans the whole opening.
+this time), because each finger joint's travel is one finger's displacement; the master
+`gripper_opening_joint` spans `2 × stroke` and its `<mimic>` fractions derive both fingers
+from it. The 85.452 mm figure is what the SDK's `max_stroke_mm` holds, because SDK position
+spans the whole opening.
 
 > The measured stroke, 85.452 mm, is 1.548 mm (about 1.78%) smaller than the original design
 > expectation of 87.0 mm. The stroke-related constants in both the SDK and the URDF must be
@@ -430,12 +439,11 @@ to trust:
 
 ## Step 7 — Calibrate speed, and derive the URDF `velocity`
 
-The URDF `velocity` limit is **per finger**, in m/s. The SDK's `speed_mm_s` is the rate of
-change of the whole opening. Each finger moves half as fast as the opening changes:
-
-```text
-per-finger speed = opening rate / 2
-```
+The URDF `velocity` argument feeds the limit of both the master `gripper_opening_joint`
+and the two finger joints. The master is the joint controllers and planners actually
+command, and its value is the whole opening travel, so calibrate it against the **opening
+rate**, in m/s. The SDK's `speed_mm_s` is the same opening rate. Each finger moves half as
+fast (`q_finger = -0.5 × opening + stroke`), which its identical limit comfortably covers.
 
 **Procedure.**
 
@@ -460,11 +468,11 @@ per-finger speed = opening rate / 2
 7. Convert to the URDF value:
 
 ```text
-URDF velocity = (max opening rate mm/s) / 2 / 1000      [m/s]
+URDF velocity = (max opening rate mm/s) / 1000      [m/s]
 ```
 
-With the specified 85 mm/s opening rate this gives `85 / 2 / 1000 = 0.0425 m/s`, against a
-placeholder of `0.2` m/s. The placeholder is roughly 4.7× too high — a controller that
+With the specified 85 mm/s opening rate this gives `85 / 1000 = 0.085 m/s`, against a
+placeholder of `0.2` m/s. The placeholder is roughly 2.4× too high — a controller that
 respects the limit would command moves the hardware cannot follow.
 
 ---
@@ -513,7 +521,7 @@ placeholders chosen to damp simulation oscillation. They were not measured.
 | --- | --- | --- |
 | `stroke` | Step 1 | `85.452 / 2 / 1000` → `0.042726` m |
 | `effort` | Step 6 | Maximum grip force at the permitted torque, in N |
-| `velocity` | Step 7 | `(max opening rate mm/s) / 2 / 1000` |
+| `velocity` | Step 7 | `(max opening rate mm/s) / 1000` |
 | `joint_damping` | Step 8 | Fitted slope, N·s/m (**simulation only**) |
 | `joint_friction` | Step 8 | Median breakaway force, N (**simulation only**) |
 
@@ -562,6 +570,7 @@ MEASURED
   max opening (inner face to inner face)     86.960 mm  (5 readings: 87.6 87.2 87.0 86.2 86.8)
   total opening-change stroke                85.452 mm
   per-finger travel                          42.726 mm
+  URDF opening travel (master joint)         0.085452 m
   zero_position_rad                          0.041390 rad
   max_position_rad                          -1.272793 rad
   travel_range_rad                           1.314183 rad (re-measured; stable)
