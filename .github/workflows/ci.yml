@@ -104,6 +104,31 @@ jobs:
           joints = {j.get("name"): j for j in root.findall("joint")}
           problems = []
 
+          def limit_bounds(joint, label):
+              """The joint's numeric <limit lower/upper>, or None after recording why not."""
+              limit = joint.find("limit")
+              if limit is None:
+                  problems.append(f"{label} has no <limit>")
+                  return None
+              bounds = {}
+              for attr in ("lower", "upper"):
+                  raw = limit.get(attr)
+                  if raw is None:
+                      problems.append(f"{label} <limit> has no {attr}")
+                      continue
+                  try:
+                      bounds[attr] = float(raw)
+                  except ValueError:
+                      problems.append(f"{label} {attr} {raw!r} is not a number")
+              return bounds
+
+          def as_float(raw, what):
+              try:
+                  return float(raw)
+              except (TypeError, ValueError):
+                  problems.append(f"{what} {raw!r} is not a number")
+                  return None
+
           master = joints.get(MASTER)
           if master is None:
               problems.append(f"missing master joint {MASTER}")
@@ -111,6 +136,7 @@ jobs:
               problems.append(f"{MASTER} is {master.get('type')}, expected prismatic")
 
           offset = None
+          finger_limits = {}
           for finger in FINGERS:
               joint = joints.get(finger)
               if joint is None:
@@ -122,18 +148,39 @@ jobs:
                   continue
               if mimic.get("joint") != MASTER:
                   problems.append(f"{finger} mimics {mimic.get('joint')}, expected {MASTER}")
-              if abs(float(mimic.get("multiplier", "0")) - MULTIPLIER) > 1e-9:
+              multiplier = as_float(mimic.get("multiplier", "0"), f"{finger} multiplier")
+              if multiplier is not None and abs(multiplier - MULTIPLIER) > 1e-9:
                   problems.append(f"{finger} multiplier is {mimic.get('multiplier')}, expected {MULTIPLIER}")
-              finger_offset = float(mimic.get("offset", "0"))
+              finger_offset = as_float(mimic.get("offset", "0"), f"{finger} offset")
+              if finger_offset is None:
+                  continue
               if offset is None:
                   offset = finger_offset
               elif abs(finger_offset - offset) > 1e-9:
                   problems.append(f"{finger} offset {finger_offset} differs from {offset}")
+              finger_limits[finger] = (limit_bounds(joint, finger), finger_offset)
 
           if master is not None and offset is not None:
-              upper = float(master.find("limit").get("upper"))
-              if abs(upper - 2.0 * offset) > 1e-9:
-                  problems.append(f"{MASTER} upper {upper} is not 2 x offset {offset}")
+              bounds = limit_bounds(master, MASTER)
+              if bounds is not None:
+                  if "lower" in bounds and abs(bounds["lower"]) > 1e-9:
+                      problems.append(f"{MASTER} lower {bounds['lower']} is not 0")
+                  if "upper" in bounds and abs(bounds["upper"] - 2.0 * offset) > 1e-9:
+                      problems.append(f"{MASTER} upper {bounds['upper']} is not 2 x offset {offset}")
+
+          # A finger's own limit must span exactly what its mimic law reaches:
+          # q_finger = -0.5 * opening + offset with opening in [0, 2 * offset]
+          # => q_finger in [0, offset]. If the limit drifts, the URDF admits
+          # finger positions the mimic relation can never produce.
+          for finger, (bounds, finger_offset) in finger_limits.items():
+              if bounds is None:
+                  continue
+              if "lower" in bounds and abs(bounds["lower"]) > 1e-9:
+                  problems.append(f"{finger} lower {bounds['lower']} is not 0")
+              if "upper" in bounds and abs(bounds["upper"] - finger_offset) > 1e-9:
+                  problems.append(
+                      f"{finger} upper {bounds['upper']} is not its mimic offset {finger_offset}"
+                  )
 
           blocks = root.findall("ros2_control")
           if len(blocks) != 1:
