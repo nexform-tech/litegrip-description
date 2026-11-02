@@ -93,10 +93,10 @@ The model endpoints below come from `tf2_echo base_footprint <link>` against a r
 `robot_state_publisher`; the measured column is caliper reading on this gripper. The
 updated limit still needs runtime re-checking.
 
-| Command | Finger origins | Inner faces | Opening |
-| --- | --- | --- | --- |
-| `[0.0, 0.0]` | `x = ∓0.067` | model `x = ∓0.0435` | model **87 mm**; measured **86.960 mm** |
-| `[0.042726, 0.042726]` | measured closed position | measured closed position | measured clearance **1.508 mm** |
+| Opening (`gripper_opening_joint`) | Finger `q` | Finger origins | Inner faces | Opening |
+| --- | --- | --- | --- | --- |
+| `0.085452` (fully open) | `0.0` | `x = ∓0.067` | model `x = ∓0.0435` | model **87 mm**; measured **86.960 mm** |
+| `0.0` (closed) | `0.042726` | measured closed position | measured closed position | measured clearance **1.508 mm** |
 
 The values in the "Finger origins" column match the joint origins in the URDF exactly at
 `q = 0`, which confirms the joint origins and the mesh bounding box are consistent.
@@ -119,24 +119,30 @@ is quantitatively complete.
 
 ---
 
-## Joint sign convention
+## Opening convention
 
 **This is the single most common source of integration bugs with this model.**
 
-The two joints have opposite axis directions (`+X` and `-X`). Because
-`JointGroupPositionController` applies each value to its own joint along that joint's own
-axis, **both entries must carry the same sign** to move the fingers symmetrically:
+The real gripper has one motor and one transmission, so the model exposes **one**
+commandable joint. `gripper_opening_joint` is a prismatic joint whose value is the opening
+travel in metres; both finger joints are `<mimic>` followers:
+
+```text
+q_finger = -0.5 × opening + stroke
+```
 
 | Command | Result |
 | --- | --- |
-| `[0.0, 0.0]` | Fully open |
-| `[0.042726, 0.042726]` | Measured closed calibration position |
-| `[0.02, -0.02]` | ❌ Fingers move in the same direction — not a grasp |
+| `0.0` | Measured closed calibration position (fingers at `q = stroke`) |
+| `0.042726` | Half open |
+| `0.085452` | Fully open (fingers at `q = 0`) |
 
-The opposite axes are a property of the CAD model, not a defect introduced here; the
-SolidWorks CSV declares `Joint Axis X = 1` for one finger and `-1` for the other. Because
-`lower = 0` and `upper = 0.042726` for both joints, a symmetric "one positive, one negative"
-command is not merely wrong but out of range for one of the joints.
+The finger axes still point opposite ways (`+X` and `-X`, straight from the SolidWorks
+CSV: `Joint Axis X = 1` for one finger, `-1` for the other). Both mimics carry the same
+`multiplier="-0.5"` **because** the axes are opposite: `q_finger` is a displacement along
+each joint's own axis, so a common multiplier moves the fingers symmetrically. Do not send
+independent finger commands, and do not expect a two-element command array — neither finger
+has a command interface.
 
 ---
 
@@ -184,6 +190,7 @@ and 3). That is a calibration decision, not a geometry edit.
 | 9 | `config/joint_names_*.yaml` corrected | The export contained an empty-string placeholder and a duplicated entry: `['', 'gripper_slide_joint', 'gripper_slide_joint', ]` |
 | 10 | Dropped the extra `base_link → base_footprint` static transform | Direction was reversed and it would conflict with the URDF's root link; see above |
 | 11 | Completed `package.xml` dependencies | The export omitted `gazebo_ros`, `tf`, `rostopic`, and `joint_state_publisher` |
+| 12 | Added master `gripper_opening_joint`; both fingers now `<mimic>` it | The real gripper has one motor and one transmission. Two independently commandable joints described hardware that does not exist, and made the MoveIt planning group reference a joint the URDF did not provide |
 
 Items 1–3 were each confirmed by attempting to parse the corresponding source file; see
 [Source lineage](#source-lineage).
@@ -210,19 +217,38 @@ Full tensors, including centres of mass and products of inertia, are in
 
 ## Design decisions
 
-### Why `JointGroupPositionController` and not `GripperActionController`
+### Single-actuator interface
 
-A gripper naturally wants an action interface — "close until stalled" is the operation
-callers actually want. The obstacle is that `GripperActionController` accepts exactly
-**one** joint. Driving two fingers with it would require a `<mimic>` joint on the second
-finger, and **`<mimic>` does not take effect automatically in ros2_control** — it depends
-on support from the hardware interface or simulator, which not every vendor plugin
-provides.
+The real gripper has one motor and one transmission; the fingers were never independently
+controllable. The model now says so. `gripper_opening_joint` (prismatic, carried by the
+geometry-free dummy link `gripper_opening_link`) is the only commandable joint, and both
+finger joints are its `<mimic>` followers:
 
-`JointGroupPositionController` takes a joint array and needs no mimic support, so it works
-uniformly across mock, Gazebo, and real hardware. The trade-off is that callers must send
-a `Float64MultiArray` over a topic rather than calling an action. If you want the action
-interface and your hardware supports `<mimic>`, that substitution is a supported change.
+```text
+q_finger = -0.5 × opening + stroke
+```
+
+`opening = 0` is the measured closed stop; `opening = 2 × stroke` is fully open. A MoveIt
+planning group, the `<ros2_control>` block and a joint slider all expose one joint.
+
+`<mimic>` is honoured by `robot_state_publisher` and MoveIt, which is why the derived finger
+positions appear in TF and in the planning model without any extra wiring. **ros2_control
+does not evaluate `<mimic>` itself** — it acts only on the interfaces the hardware
+component declares. That is why the finger joints have no command or state interface in
+the ros2_control block: the single master joint is the whole interface.
+
+### Why the mock uses `JointGroupPositionController`
+
+With one commandable joint, `position_controllers/GripperActionController` now fits
+exactly — it accepts a single joint, and it expresses "close until stalled" directly. The
+real hardware stack (`litegrip_ros2_control`) uses it for precisely that reason.
+
+This package keeps `JointGroupPositionController` for its standalone mock: it takes a
+one-element joint array over a topic, which keeps the command path identical to the
+arm-joint convention used elsewhere, and it does not depend on the `GripperActionController`
+parameters (goal tolerance, stalling). The trade-off is a `Float64MultiArray` over a topic
+instead of an action. Switching the mock to the action controller is a supported change if
+you prefer the action interface.
 
 ### Why collision geometry reuses the visual STL
 
