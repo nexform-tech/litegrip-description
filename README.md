@@ -239,8 +239,11 @@ spawns the model, then activates `joint_state_broadcaster` followed by `gripper_
 > ⚠️ **Gazebo Classic does not preserve `<mimic>` when converting URDF to SDF.** The
 > master joint and the two finger joints will load as three independent joints, so the
 > fingers will not follow the opening joint. This is a limitation of that simulator, not
-> of the model. Use MuJoCo, PyBullet, or a simulator that supports mimic constraints for
-> physics work; use the ROS 2 side for control-path work.
+> of the model. The native URDF importers of MuJoCo and PyBullet drop `<mimic>` as well,
+> so naming either of them as a replacement would repeat the same problem. For physics
+> work, use a path that preserves the constraint — `mujoco_ros2_control`, or a converter
+> that emits MuJoCo `<equality>` constraints — and verify the simulator honours mimic
+> before relying on it. Use the ROS 2 side for control-path work.
 
 ---
 

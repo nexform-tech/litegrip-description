@@ -8,7 +8,9 @@
 
 ⚠ Gazebo Classic 在 URDF→SDF 转换时会丢掉 <mimic>：总控关节与两个手指关节
    会作为三个独立关节加载，两指不会跟随总控关节。这是该仿真器的限制。
-   物理仿真请用支持 mimic 约束的仿真器（MuJoCo、PyBullet）。
+   MuJoCo 与 PyBullet 的原生 URDF 导入器同样会丢掉 <mimic>，所以不要直接用
+   它们加载本模型做物理仿真。请走能保留约束的路径（mujoco_ros2_control，
+   或能生成 MuJoCo <equality> 约束的转换器），并先确认其确实遵守 mimic。
 
 说明：此 launch 不额外发布 base_link -> base_footprint 的静态变换。
 URDF 中已定义 base_footprint 为无惯性根节点且与 base_link 位姿重合，

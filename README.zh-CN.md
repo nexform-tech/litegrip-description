@@ -232,8 +232,10 @@ ros2 launch litegrip_description gazebo.launch.py
 
 > ⚠️ **Gazebo Classic 在 URDF→SDF 转换时会丢掉 `<mimic>`。** 总控关节与两个手指关节
 > 会作为三个独立关节被加载，两指不会跟随总控关节运动。这是该仿真器的限制，不是模型
-> 的问题。做物理仿真请用 MuJoCo、PyBullet 等支持 mimic 约束的仿真器；做控制链路验证
-> 请走 ROS 2 这一侧。
+> 的问题。MuJoCo 与 PyBullet 的原生 URDF 导入器同样会丢掉 `<mimic>`，因此把其中任何
+> 一个当作替代方案都会重复同一个问题。做物理仿真请走能保留约束的路径 ——
+> `mujoco_ros2_control`，或能生成 MuJoCo `<equality>` 约束的转换器 —— 并在依赖之前
+> 自行确认该仿真器确实遵守 mimic。做控制链路验证请走 ROS 2 这一侧。
 
 ---
 
