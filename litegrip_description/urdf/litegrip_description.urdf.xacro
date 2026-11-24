@@ -74,6 +74,18 @@
       ros2_control 因为关节接口重复而拒绝加载。
   -->
   <xacro:arg name="include_mock_ros2_control" default="true"/>
+  <!--
+    link 名前缀。把夹爪安装到另一台机器人上时，宿主的根 link 很可能也叫
+    `base_link`（本包默认名），直接 include 会产生重名 link、URDF 无法解析。
+    上层组合文件给该参数一个前缀（如 `litegrip_`）即可避免冲突。
+
+    ⚠ 只改 link 名。joint 名（`gripper_opening_joint`、两条滑动/mimic 关节）
+      保持不变：它们是控制器配置与上层接口的契约，不属于本参数的范围。
+    默认空 = 本包单独使用时行为完全不变。
+  -->
+  <xacro:arg name="link_prefix" default=""/>
+  <!-- xacro 的 ${} 表达式里取不到 arg，只能按属性引用（与 stroke 的写法一致） -->
+  <xacro:property name="lp" value="$(arg link_prefix)"/>
 
   <!-- ======================== 材质定义 ======================== -->
   <material name="litegrip_base">
@@ -89,17 +101,18 @@
     KDL 不支持带惯性的 root link（会告警并静默忽略 base_link 的惯性），
     引入该节点后 TF 树具有合法树根，MoveIt / KDL 可正常使用。
     夹爪作为末端执行器安装到机械臂时，请以 base_footprint 作为附着基准。
+    （若用 link_prefix 加了前缀，附着基准就是 <前缀>base_footprint。）
   -->
-  <link name="base_footprint"/>
+  <link name="${lp}base_footprint"/>
 
   <joint name="base_footprint_joint" type="fixed">
-    <parent link="base_footprint"/>
-    <child link="base_link"/>
+    <parent link="${lp}base_footprint"/>
+    <child link="${lp}base_link"/>
     <origin xyz="0 0 0" rpy="0 0 0"/>
   </joint>
 
   <!-- ======================== 夹爪本体 ======================== -->
-  <link name="base_link">
+  <link name="${lp}base_link">
     <inertial>
       <origin xyz="-7.90239142174285E-05 3.69945158980779E-05 -0.0166444528152071" rpy="0 0 0"/>
       <mass value="0.506299067530095"/>
@@ -141,18 +154,18 @@
     （URDF 的关节必须有子 link；它同时也是 MoveIt 规划组的链尾，
     不参与碰撞检查，因为没有任何 collision 元素）。
   -->
-  <link name="gripper_opening_link"/>
+  <link name="${lp}gripper_opening_link"/>
 
   <joint name="gripper_opening_joint" type="prismatic">
-    <parent link="base_link"/>
-    <child link="gripper_opening_link"/>
+    <parent link="${lp}base_link"/>
+    <child link="${lp}gripper_opening_link"/>
     <origin xyz="0 0 0" rpy="0 0 0"/>
     <axis xyz="1 0 0"/>
     <limit lower="0.0" upper="${2.0 * float(stroke_arg)}" effort="$(arg effort)" velocity="$(arg velocity)"/>
   </joint>
 
   <!-- ======================== 指 1（右指） ======================== -->
-  <link name="gripper_slider_link1">
+  <link name="${lp}gripper_slider_link1">
     <inertial>
       <origin xyz="0.0133451305147342 -0.00404000727940517 0.0126301584041473" rpy="0 0 0"/>
       <mass value="0.0354537367324049"/>
@@ -181,8 +194,8 @@
 
   <joint name="gripper_slide_joint_right" type="prismatic">
     <origin xyz="-0.067 0.0010833 0.034083" rpy="0 0 0"/>
-    <parent link="base_link"/>
-    <child link="gripper_slider_link1"/>
+    <parent link="${lp}base_link"/>
+    <child link="${lp}gripper_slider_link1"/>
     <axis xyz="1 0 0"/>
     <limit
       lower="0.0"
@@ -195,7 +208,7 @@
   </joint>
 
   <!-- ======================== 指 2（左指） ======================== -->
-  <link name="gripper_slider_link2">
+  <link name="${lp}gripper_slider_link2">
     <inertial>
       <origin xyz="-0.0133451305147341 0.0040400072794052 0.0126301584041473" rpy="0 0 0"/>
       <mass value="0.0354537367324048"/>
@@ -224,8 +237,8 @@
 
   <joint name="gripper_slide_joint_left" type="prismatic">
     <origin xyz="0.067 -0.0010833 0.034083" rpy="0 0 0"/>
-    <parent link="base_link"/>
-    <child link="gripper_slider_link2"/>
+    <parent link="${lp}base_link"/>
+    <child link="${lp}gripper_slider_link2"/>
     <axis xyz="-1 0 0"/>
     <limit
       lower="0.0"

@@ -345,6 +345,7 @@ gripper_slider_link1.STL 的 X 范围 = [-0.00095, +0.0235]   （包围盒实测
 | `joint_friction` | `0.02` | 关节摩擦 ⚠ 占位值 |
 | `hardware_plugin` | `mock_components/GenericSystem` | ros2_control 硬件插件 |
 | `include_mock_ros2_control` | `true` | 是否输出本包自带的 mock `<ros2_control>` 块；上层组合文件为同一关节接入真实硬件组件时置 `false` |
+| `link_prefix` | 空 | link 名前缀。把夹爪组合进另一台机器人时使用（宿主通常也有 `base_link`，不加前缀会重名）；只改 link 名，joint 名不变，控制器接口约定不受影响 |
 
 **参数覆盖方式。** `stroke`、`effort`、`velocity` 已由 `display.launch.py` 与
 `ros2_control.launch.py` 暴露为 launch 参数，可在命令行直接覆盖。

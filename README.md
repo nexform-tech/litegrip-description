@@ -361,6 +361,7 @@ left; both are unusable as exported. Full derivation in
 | `joint_friction` | `0.02` | Joint friction ⚠ placeholder |
 | `hardware_plugin` | `mock_components/GenericSystem` | ros2_control hardware plugin |
 | `include_mock_ros2_control` | `true` | Emit this package's mock `<ros2_control>` block; set `false` when a composition file adds a real hardware component for the same joint |
+| `link_prefix` | empty | Prefix for link names. Use it when composing the gripper into another robot (hosts commonly define `base_link` too). Only link names change; joint names do not, so controller interfaces are unaffected |
 
 **Overriding arguments.** `stroke`, `effort`, and `velocity` are exposed as launch
 arguments by both `display.launch.py` and `ros2_control.launch.py`, so they can be set on
