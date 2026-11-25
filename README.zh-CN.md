@@ -258,7 +258,7 @@ upper 是 `stroke`。
 | Link | 父节点 | 关节 | 质量 |
 | --- | --- | --- | --- |
 | `base_footprint` | — | 根节点，无惯性 | 0 |
-| `base_link` | `base_footprint` | `base_footprint_joint`（fixed） | 0.5063 kg |
+| `base_link` | `base_footprint` | `base_footprint_joint`（fixed，受 `link_prefix` 前缀影响） | 0.5063 kg |
 | `gripper_opening_link` | `base_link` | `gripper_opening_joint` | 0（无几何 dummy） |
 | `gripper_slider_link1` | `base_link` | `gripper_slide_joint_right` | 0.03545 kg |
 | `gripper_slider_link2` | `base_link` | `gripper_slide_joint_left` | 0.03545 kg |
@@ -345,7 +345,7 @@ gripper_slider_link1.STL 的 X 范围 = [-0.00095, +0.0235]   （包围盒实测
 | `joint_friction` | `0.02` | 关节摩擦 ⚠ 占位值 |
 | `hardware_plugin` | `mock_components/GenericSystem` | ros2_control 硬件插件 |
 | `include_mock_ros2_control` | `true` | 是否输出本包自带的 mock `<ros2_control>` 块；上层组合文件为同一关节接入真实硬件组件时置 `false` |
-| `link_prefix` | 空 | link 名前缀。把夹爪组合进另一台机器人时使用（宿主通常也有 `base_link`，不加前缀会重名）；只改 link 名，joint 名不变，控制器接口约定不受影响 |
+| `link_prefix` | 空 | link 名与根部固定关节 `base_footprint_joint` 的前缀。把夹爪组合进另一台机器人时使用（宿主通常也有 `base_link` 和 `base_footprint_joint`，不加前缀会重名）；控制器关节 `gripper_opening_joint`、`gripper_slide_joint_right`、`gripper_slide_joint_left` 名不变，控制器接口约定不受影响 |
 
 **参数覆盖方式。** `stroke`、`effort`、`velocity` 已由 `display.launch.py` 与
 `ros2_control.launch.py` 暴露为 launch 参数，可在命令行直接覆盖。

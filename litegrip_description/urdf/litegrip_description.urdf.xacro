@@ -79,8 +79,12 @@
     `base_link`（本包默认名），直接 include 会产生重名 link、URDF 无法解析。
     上层组合文件给该参数一个前缀（如 `litegrip_`）即可避免冲突。
 
-    ⚠ 只改 link 名。joint 名（`gripper_opening_joint`、两条滑动/mimic 关节）
-      保持不变：它们是控制器配置与上层接口的契约，不属于本参数的范围。
+    前缀同时作用于全部 link 名和根部固定关节 `base_footprint_joint`。后者只在
+    本文件内部使用，不是控制器契约；加前缀可避免与宿主同名的
+    `base_footprint_joint`（移动底盘上很常见）冲突。
+
+    ⚠ 其余 joint 名（`gripper_opening_joint`、两条滑动/mimic 关节）保持不变：
+      它们是控制器配置、mimic 引用与上层接口的契约，不属于本参数的范围。
     默认空 = 本包单独使用时行为完全不变。
   -->
   <xacro:arg name="link_prefix" default=""/>
@@ -105,7 +109,7 @@
   -->
   <link name="${lp}base_footprint"/>
 
-  <joint name="base_footprint_joint" type="fixed">
+  <joint name="${lp}base_footprint_joint" type="fixed">
     <parent link="${lp}base_footprint"/>
     <child link="${lp}base_link"/>
     <origin xyz="0 0 0" rpy="0 0 0"/>
