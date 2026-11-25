@@ -266,7 +266,7 @@ limits are `stroke`.
 | Link | Parent | Joint | Mass |
 | --- | --- | --- | --- |
 | `base_footprint` | — | root, no inertia | 0 |
-| `base_link` | `base_footprint` | `base_footprint_joint` (fixed) | 0.5063 kg |
+| `base_link` | `base_footprint` | `base_footprint_joint` (fixed, prefixed by `link_prefix`) | 0.5063 kg |
 | `gripper_opening_link` | `base_link` | `gripper_opening_joint` | 0 (geometry-free dummy) |
 | `gripper_slider_link1` | `base_link` | `gripper_slide_joint_right` | 0.03545 kg |
 | `gripper_slider_link2` | `base_link` | `gripper_slide_joint_left` | 0.03545 kg |
@@ -361,6 +361,7 @@ left; both are unusable as exported. Full derivation in
 | `joint_friction` | `0.02` | Joint friction ⚠ placeholder |
 | `hardware_plugin` | `mock_components/GenericSystem` | ros2_control hardware plugin |
 | `include_mock_ros2_control` | `true` | Emit this package's mock `<ros2_control>` block; set `false` when a composition file adds a real hardware component for the same joint |
+| `link_prefix` | empty | Prefix for link names and the `base_footprint_joint` fixed joint. Use it when composing the gripper into another robot (hosts commonly define `base_link` and `base_footprint_joint` too). The controller joints `gripper_opening_joint`, `gripper_slide_joint_right`, and `gripper_slide_joint_left` keep their names, so controller interfaces are unaffected |
 
 **Overriding arguments.** `stroke`, `effort`, and `velocity` are exposed as launch
 arguments by both `display.launch.py` and `ros2_control.launch.py`, so they can be set on
