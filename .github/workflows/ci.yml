@@ -195,3 +195,90 @@ jobs:
           print("\n".join(problems) if problems else "single-actuator contract holds")
           sys.exit(1 if problems else 0)
           PY
+
+      - name: Check composition with a host robot
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+          description="$PWD/litegrip_description/urdf/litegrip_description.urdf.xacro"
+
+          # A prefixed expansion must rename every link and the internal
+          # footprint joint while leaving the controller joints untouched.
+          xacro litegrip_description/urdf/litegrip_description.urdf.xacro \
+            link_prefix:=litegrip_ > "$tmp/prefixed.urdf"
+          check_urdf "$tmp/prefixed.urdf" > /dev/null
+
+          # A host that already defines the usual base_link chain and a
+          # base_footprint_joint must still compose and parse cleanly. This is
+          # the case that failed before the footprint joint was prefixed.
+          cat > "$tmp/host.urdf.xacro" <<EOF
+          <?xml version="1.0"?>
+          <robot name="host" xmlns:xacro="http://www.ros.org/wiki/xacro">
+            <link name="base_footprint"/>
+            <link name="base_link"/>
+            <joint name="base_footprint_joint" type="fixed">
+              <parent link="base_footprint"/>
+              <child link="base_link"/>
+            </joint>
+            <xacro:include filename="$description"/>
+            <joint name="mount_joint" type="fixed">
+              <parent link="base_link"/>
+              <child link="litegrip_base_footprint"/>
+            </joint>
+          </robot>
+          EOF
+          xacro "$tmp/host.urdf.xacro" link_prefix:=litegrip_ > "$tmp/host.urdf"
+          check_urdf "$tmp/host.urdf" > /dev/null
+
+          python3 - "$tmp/prefixed.urdf" "$tmp/host.urdf" <<'PY'
+          import sys
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          LINKS = {
+              "base_footprint",
+              "base_link",
+              "gripper_opening_link",
+              "gripper_slider_link1",
+              "gripper_slider_link2",
+          }
+          PREFIXED = {f"litegrip_{name}" for name in LINKS}
+          CONTROLLER_JOINTS = {
+              "gripper_opening_joint",
+              "gripper_slide_joint_right",
+              "gripper_slide_joint_left",
+          }
+
+          problems = []
+
+          def names(root, tag):
+              return [element.get("name") for element in root.findall(tag)]
+
+          prefixed = ET.parse(Path(sys.argv[1])).getroot()
+          links = set(names(prefixed, "link"))
+          joints = set(names(prefixed, "joint"))
+          if links != PREFIXED:
+              problems.append(f"prefixed links are {sorted(links)}, expected {sorted(PREFIXED)}")
+          if not CONTROLLER_JOINTS <= joints:
+              problems.append(f"prefixed expansion lost controller joints: {sorted(CONTROLLER_JOINTS - joints)}")
+          if "litegrip_base_footprint_joint" not in joints:
+              problems.append("prefixed expansion is missing litegrip_base_footprint_joint")
+
+          host = ET.parse(Path(sys.argv[2])).getroot()
+          host_links = names(host, "link")
+          host_joints = names(host, "joint")
+          if len(host_links) != len(set(host_links)):
+              problems.append("host composition has duplicate link names")
+          if len(host_joints) != len(set(host_joints)):
+              problems.append("host composition has duplicate joint names")
+          if host_links.count("base_link") != 1:
+              problems.append(
+                  f"host composition has {host_links.count('base_link')} base_link links, expected 1"
+              )
+          if "litegrip_base_footprint_joint" not in host_joints:
+              problems.append("host composition is missing litegrip_base_footprint_joint")
+
+          print("\n".join(problems) if problems else "composition with a host robot holds")
+          sys.exit(1 if problems else 0)
+          PY
